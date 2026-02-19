@@ -20,6 +20,7 @@ import json
 import math
 import mimetypes
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -39,6 +40,8 @@ EQ_COL_TO_SPECIES = {
     "n_Ar4_p": "Ar4+",
     "n_e": "e-",
 }
+CP_PEAK_TMIN = 0.0
+CP_PEAK_TMAX = 30000.0
 
 
 def parse_args() -> argparse.Namespace:
@@ -243,7 +246,7 @@ def write_csv(path: Path, rows: list[dict[str, float]], include_pressure: bool) 
 
 
 def write_cp_peak_csv(path: Path, peak_rows: list[dict[str, float]]) -> None:
-    fields = ["P_atm", "cp_peak_T_K_10000_20000", "cp_peak_J_kgK_10000_20000"]
+    fields = ["P_atm", "cp_peak_T_K_0_30000", "cp_peak_J_kgK_0_30000"]
     with path.open("w", encoding="utf-8", newline="") as fp:
         writer = csv.DictWriter(fp, fieldnames=fields)
         writer.writeheader()
@@ -468,18 +471,18 @@ def generate_gnuplot_figures(combined_csv: Path, plots_dir: Path, pressures: lis
         ("h_vs_T.gnuplot", 4, "Specific Enthalpy", "h [J/kg]", plots_dir / "h_vs_T.png"),
         ("cp_vs_T.gnuplot", 5, "Specific Heat at Constant Pressure", "Cp [J/(kg K)]", plots_dir / "cp_vs_T.png"),
         (
-            "cp_vs_T_10000_20000K.gnuplot",
+            "cp_vs_T_0_30000K.gnuplot",
             5,
-            "Specific Heat at Constant Pressure (10000-20000 K)",
+            "Specific Heat at Constant Pressure (0-30000 K)",
             "Cp [J/(kg K)]",
-            plots_dir / "cp_vs_T_10000_20000K.png",
+            plots_dir / "cp_vs_T_0_30000K.png",
         ),
     ]
 
     for script_name, col, title, ylabel, png_path in scripts:
         x_range_line = ""
-        if "10000_20000" in script_name:
-            x_range_line = "set xrange [10000:20000]\n"
+        if "0_30000" in script_name:
+            x_range_line = "set xrange [0:30000]\n"
 
         plot_lines = []
         for p, color, label in pressure_terms:
@@ -605,17 +608,20 @@ def main() -> None:
     cp_peak_rows: list[dict[str, float]] = []
     for p_atm in pressures:
         t_peak, cp_peak = cp_peaks_between(
-            per_pressure_rows[p_atm], t_min=10000.0, t_max=20000.0
+            per_pressure_rows[p_atm], t_min=CP_PEAK_TMIN, t_max=CP_PEAK_TMAX
         )
         cp_peak_rows.append(
             {
                 "P_atm": p_atm,
-                "cp_peak_T_K_10000_20000": t_peak,
-                "cp_peak_J_kgK_10000_20000": cp_peak,
+                "cp_peak_T_K_0_30000": t_peak,
+                "cp_peak_J_kgK_0_30000": cp_peak,
             }
         )
-    cp_peak_csv = output_dir / "argon_cp_peaks_10000_20000K.csv"
+    cp_peak_csv = output_dir / "argon_cp_peaks_0_30000K.csv"
     write_cp_peak_csv(cp_peak_csv, cp_peak_rows)
+    # Backward-compatible alias to avoid breaking existing links/references.
+    legacy_cp_peak_csv = output_dir / "argon_cp_peaks_10000_20000K.csv"
+    shutil.copyfile(cp_peak_csv, legacy_cp_peak_csv)
 
     metadata = {
         "inputs": {
@@ -641,7 +647,7 @@ def main() -> None:
             "h": "h = (1/rho) * sum_i n_i H_i",
             "Cp": "Cp = (dh/dT)_P (finite difference)",
         },
-        "cp_peak_10000_20000K": cp_peak_rows,
+        "cp_peak_0_30000K": cp_peak_rows,
         "outputs": {
             "combined_csv": str(combined_csv),
             "cp_peak_csv": str(cp_peak_csv),
@@ -667,6 +673,14 @@ def main() -> None:
             generate_gnuplot_figures(
                 combined_csv=combined_csv, plots_dir=plots_dir, pressures=pressures
             )
+            # Backward-compatible aliases for previously shared plot names.
+            legacy_plot_map = {
+                plots_dir / "cp_vs_T_0_30000K.png": plots_dir / "cp_vs_T_10000_20000K.png",
+                plots_dir / "cp_vs_T_0_30000K.gnuplot": plots_dir / "cp_vs_T_10000_20000K.gnuplot",
+            }
+            for src, dst in legacy_plot_map.items():
+                if src.exists():
+                    shutil.copyfile(src, dst)
         except FileNotFoundError:
             print("[WARN] gnuplot not found. Skipping plots.")
         except subprocess.CalledProcessError as exc:

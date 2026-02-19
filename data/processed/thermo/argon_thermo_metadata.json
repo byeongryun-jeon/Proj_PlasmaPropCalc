@@ -40,26 +40,26 @@
     "h": "h = (1/rho) * sum_i n_i H_i",
     "Cp": "Cp = (dh/dT)_P (finite difference)"
   },
-  "cp_peak_10000_20000K": [
+  "cp_peak_0_30000K": [
     {
       "P_atm": 0.1,
-      "cp_peak_T_K_10000_20000": 12700.0,
-      "cp_peak_J_kgK_10000_20000": 12104.008824509037
+      "cp_peak_T_K_0_30000": 22300.0,
+      "cp_peak_J_kgK_0_30000": 15425.5867539021
     },
     {
       "P_atm": 1.0,
-      "cp_peak_T_K_10000_20000": 14700.0,
-      "cp_peak_J_kgK_10000_20000": 9644.182722671925
+      "cp_peak_T_K_0_30000": 25700.0,
+      "cp_peak_J_kgK_0_30000": 12458.996097084284
     },
     {
       "P_atm": 4.0,
-      "cp_peak_T_K_10000_20000": 16100.0,
-      "cp_peak_J_kgK_10000_20000": 8322.93608831021
+      "cp_peak_T_K_0_30000": 28300.0,
+      "cp_peak_J_kgK_0_30000": 10873.009548963197
     }
   ],
   "outputs": {
     "combined_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_thermo_0p1_1_4atm.csv",
-    "cp_peak_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_cp_peaks_10000_20000K.csv",
+    "cp_peak_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_cp_peaks_0_30000K.csv",
     "per_pressure_csv": [
       "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_thermo_0p1atm.csv",
       "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_thermo_1atm.csv",
