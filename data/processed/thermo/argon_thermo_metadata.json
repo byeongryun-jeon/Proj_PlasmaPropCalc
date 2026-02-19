@@ -1,0 +1,75 @@
+{
+  "inputs": {
+    "partition_json": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/partition_functions/partition_functions_Ar_system.json",
+    "equilibrium_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/equilibrium/argon_lte_equilibrium_0p1_1_4atm.csv"
+  },
+  "species_order": [
+    "Ar",
+    "Ar+",
+    "Ar2+",
+    "Ar3+",
+    "Ar4+",
+    "e-"
+  ],
+  "pressures_atm": [
+    0.1,
+    1.0,
+    4.0
+  ],
+  "temperature_range_K": {
+    "min": 300.0,
+    "max": 30000.0,
+    "n_points_per_pressure": 150
+  },
+  "constants": {
+    "kB_eV_per_K": 8.617333262e-05,
+    "eV_to_J": 1.602176634e-19,
+    "masses_kg": {
+      "Ar": 6.6335209e-26,
+      "Ar+": 6.633429806163e-26,
+      "Ar2+": 6.633338712326001e-26,
+      "Ar3+": 6.633247618489e-26,
+      "Ar4+": 6.633156524652e-26,
+      "e-": 9.1093837e-31
+    }
+  },
+  "formulas": {
+    "rho": "rho = sum_i n_i m_i",
+    "H_i_eV": "H_i = (5/2) k_B T + k_B T^2 d(ln Q_int,i)/dT + E_ion,i",
+    "H_i_J": "H_i[J] = H_i[eV] * 1.602176634e-19",
+    "h": "h = (1/rho) * sum_i n_i H_i",
+    "Cp": "Cp = (dh/dT)_P (finite difference)"
+  },
+  "cp_peak_10000_20000K": [
+    {
+      "P_atm": 0.1,
+      "cp_peak_T_K_10000_20000": 12700.0,
+      "cp_peak_J_kgK_10000_20000": 12104.008824509037
+    },
+    {
+      "P_atm": 1.0,
+      "cp_peak_T_K_10000_20000": 14700.0,
+      "cp_peak_J_kgK_10000_20000": 9644.182722671925
+    },
+    {
+      "P_atm": 4.0,
+      "cp_peak_T_K_10000_20000": 16100.0,
+      "cp_peak_J_kgK_10000_20000": 8322.93608831021
+    }
+  ],
+  "outputs": {
+    "combined_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_thermo_0p1_1_4atm.csv",
+    "cp_peak_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_cp_peaks_10000_20000K.csv",
+    "per_pressure_csv": [
+      "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_thermo_0p1atm.csv",
+      "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_thermo_1atm.csv",
+      "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_thermo_4atm.csv"
+    ],
+    "plots_dir": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/plots"
+  },
+  "dlnQdT_sample": {
+    "Ar_at_300K": 0.0,
+    "Ar_at_15000K": 1.3530423850856676e-05,
+    "e_minus_at_15000K": 0.0
+  }
+}

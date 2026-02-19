@@ -1,0 +1,138 @@
+{
+  "formula": "Q(T) = sum_i g_i * exp(-epsilon_i / (k_B * T))",
+  "kb_eV_per_K": 8.617333262145e-05,
+  "temperature_grid_K": {
+    "t_min": 300.0,
+    "t_max": 30000.0,
+    "n_points": 150,
+    "nominal_step": 200.0,
+    "forced_include_t_max": true
+  },
+  "species_order": [
+    "Ar",
+    "Ar+",
+    "Ar2+",
+    "Ar3+",
+    "Ar4+",
+    "e-"
+  ],
+  "stage_ionization_eV_by_charge": {
+    "0": 15.7596119,
+    "1": 27.62967,
+    "2": 40.735,
+    "3": 59.58,
+    "4": 74.84
+  },
+  "cumulative_ionization_eV_by_species": {
+    "Ar": 0.0,
+    "Ar+": 15.7596119,
+    "Ar2+": 43.3892819,
+    "Ar3+": 84.1242819,
+    "Ar4+": 143.7042819,
+    "e-": 0.0
+  },
+  "notes": [
+    "All energy levels in each CSV are included (no ionization potential lowering cutoff).",
+    "Designed for operating pressures <= 4 atm per project instruction."
+  ],
+  "sources": {
+    "Ar": {
+      "source_file": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/nist_levels/argon/Ar0.csv",
+      "n_levels": 503,
+      "skipped_rows": 1,
+      "skipped_breakdown": {
+        "missing_g": 1,
+        "invalid_g": 0,
+        "missing_level_eV": 0,
+        "invalid_level_eV": 0
+      },
+      "ionization_limit_candidates_eV": [
+        15.7596119
+      ],
+      "selected_stage_ionization_eV": 15.7596119,
+      "min_level_eV": 0.0,
+      "max_level_eV": 29.214547
+    },
+    "Ar+": {
+      "source_file": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/nist_levels/argon/Ar1.csv",
+      "n_levels": 418,
+      "skipped_rows": 1,
+      "skipped_breakdown": {
+        "missing_g": 1,
+        "invalid_g": 0,
+        "missing_level_eV": 0,
+        "invalid_level_eV": 0
+      },
+      "ionization_limit_candidates_eV": [
+        27.62967
+      ],
+      "selected_stage_ionization_eV": 27.62967,
+      "min_level_eV": 0.0,
+      "max_level_eV": 27.8476507
+    },
+    "Ar2+": {
+      "source_file": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/nist_levels/argon/Ar2.csv",
+      "n_levels": 124,
+      "skipped_rows": 1,
+      "skipped_breakdown": {
+        "missing_g": 1,
+        "invalid_g": 0,
+        "missing_level_eV": 0,
+        "invalid_level_eV": 0
+      },
+      "ionization_limit_candidates_eV": [
+        40.735
+      ],
+      "selected_stage_ionization_eV": 40.735,
+      "min_level_eV": 0.0,
+      "max_level_eV": 35.460703
+    },
+    "Ar3+": {
+      "source_file": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/nist_levels/argon/Ar3.csv",
+      "n_levels": 57,
+      "skipped_rows": 1,
+      "skipped_breakdown": {
+        "missing_g": 1,
+        "invalid_g": 0,
+        "missing_level_eV": 0,
+        "invalid_level_eV": 0
+      },
+      "ionization_limit_candidates_eV": [
+        59.58
+      ],
+      "selected_stage_ionization_eV": 59.58,
+      "min_level_eV": 0.0,
+      "max_level_eV": 37.926717
+    },
+    "Ar4+": {
+      "source_file": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/nist_levels/argon/Ar4.csv",
+      "n_levels": 48,
+      "skipped_rows": 1,
+      "skipped_breakdown": {
+        "missing_g": 1,
+        "invalid_g": 0,
+        "missing_level_eV": 0,
+        "invalid_level_eV": 0
+      },
+      "ionization_limit_candidates_eV": [
+        74.84
+      ],
+      "selected_stage_ionization_eV": 74.84,
+      "min_level_eV": 0.0,
+      "max_level_eV": 53.608
+    },
+    "e-": {
+      "source_file": "constant",
+      "n_levels": 1,
+      "min_level_eV": 0.0,
+      "max_level_eV": 0.0,
+      "Q_constant": 2.0
+    }
+  },
+  "outputs": {
+    "csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/partition_functions/partition_functions_Ar_system.csv",
+    "json": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/partition_functions/partition_functions_Ar_system.json",
+    "npz": null
+  },
+  "numpy_available": false
+}
