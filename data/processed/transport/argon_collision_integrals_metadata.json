@@ -7,8 +7,13 @@
       "aubreton1986": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/argon/aubreton1986_ar_arplus_elastic_potentials.csv",
       "milloy1977": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/argon/milloy1977_e_ar_momentum_transfer_table1.csv",
       "frost1964_digitized": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/argon/frost1964_e_ar_high_energy_digitized.csv",
+      "lxcat_e_ar_csv": "/home/brjeon/matfLookUpPython/lxcatData.txt",
       "mason1967_tableI": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/argon/mason1967_tableI_t2omega.csv",
       "mason1967_tableII": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/argon/mason1967_tableII_abc.csv"
+    },
+    "lxcat_options": {
+      "preferred_database": "Biagi",
+      "process_kind": "ELASTIC"
     }
   },
   "temperature_grid": {
@@ -28,14 +33,20 @@
     "debye_length_scale": 1.0,
     "coulomb_tstar_max": 10000.0,
     "coulomb_lnlambda_scale": 1.0,
-    "e_ar_high_order_blend": 0.0
+    "e_ar_high_order_blend": 1.0
+  },
+  "murphy_profile": {
+    "enabled": true,
+    "highcharge_ion_neutral_model": "sqrt_z",
+    "ar_arp_elastic_model": "aubreton_barker",
+    "ar_arp_state_mix": "boltzmann_normalized"
   },
   "debye_screening_density_model": "electron_only",
   "models": {
-    "Ar-Ar": "LJ surrogate with Aziz epsilon/k and sigma",
-    "Ar-Ar+": "Qex model (MurphyTam2014) + Langevin elastic capture model",
-    "Ar-Ar2+/Ar-Ar3+/Ar-Ar4+": "Derived from Ar-Ar+ via sqrt(z) scaling on Q11/Q22",
-    "e-Ar": "Maxwellian average of Qm(E), Milloy table + Frost high-energy extension",
+    "Ar-Ar": "Aziz HFDTCS2 classical scattering (HFD form, Table-I constants)",
+    "Ar-Ar+": "Qex model (MurphyTam2014) + Aubreton1986 state potentials with Barker-style scattering",
+    "Ar-Ar2+/Ar-Ar3+/Ar-Ar4+": "Direct z-charged capture model when highcharge-ion-neutral-model=capture; legacy sqrt(z) scaling from Ar-Ar+ when highcharge-ion-neutral-model=sqrt_z",
+    "e-Ar": "Maxwellian average of Qm(E), Milloy/Frost with optional LXCat merged data",
     "charged-charged": "Mason1967 reduced tables + Debye-Huckel screening for pairs among e-, Ar+, Ar2+, Ar3+, Ar4+"
   },
   "outputs": {
@@ -45,8 +56,10 @@
     "mutationpp_snippet_xml": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport/mutationpp_argon_collision_pairs.xml"
   },
   "notes": [
-    "Ar-Ar full HFDTCS2 classical scattering integration is planned; current version uses a documented LJ-style surrogate.",
-    "Frost1964 high-energy e-Ar points are figure-digitized approximations.",
+    "Ar-Ar uses numerical classical scattering with Aziz HFD reduced potential.",
+    "Ar-Ar+ elastic uses Aubreton state-resolved potentials and Barker-style classical scattering.",
+    "e-Ar source blend: Frost1964_FIGURE_DIGITIZED + LXCat:Biagi (transcription of data from SF Biagi's Fortran code, Magboltz.):ELASTIC + Milloy1977_Table1",
+    "Frost1964 high-energy e-Ar points are figure-digitized approximations when LXCat replacement is unavailable.",
     "Charged-charged table uses electron density from phase-2 equilibrium CSV and is pressure-dependent.",
     "Debye length is capped and ne is floored for low-ionization stability in screened-Coulomb mode.",
     "Coulomb tuning knobs (debye_length_scale, coulomb_tstar_max, coulomb_lnlambda_scale) can be calibrated against reference lookup tables."

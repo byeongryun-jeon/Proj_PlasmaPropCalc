@@ -1,0 +1,10 @@
+database,slug,process,target,n_points,E_min_eV,E_max_eV,output_csv
+BSR (Quantum-mechanical calculations by O. Zatsarinny and K. Bartschat),bsr_quantum_mechanical_calculations_by_o_zatsarinny_and_k_bartschat,ELASTIC,Ar,462,0.0,300.0014,/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_bsr_quantum_mechanical_calculations_by_o_zatsarinny_and_k_bartschat_e_ar_elastic.csv
+"Biagi (transcription of data from SF Biagi's Fortran code, Magboltz.)",biagi_transcription_of_data_from_sf_biagi_s_fortran_code_magboltz,ELASTIC,Ar,282,0.0,965.05,/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_biagi_transcription_of_data_from_sf_biagi_s_fortran_code_magboltz_e_ar_elastic.csv
+Biagi-v7.1 (Magboltz version 7.1),biagi_v7_1_magboltz_version_7_1,ELASTIC,Ar,202,0.0,965.0509,/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_biagi_v7_1_magboltz_version_7_1_e_ar_elastic.csv
+COP (Complex Optical Potential),cop_complex_optical_potential,ELASTIC,Ar,440,0.0,1000.0,/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_cop_complex_optical_potential_e_ar_elastic.csv
+Hayashi database,hayashi_database,ELASTIC,Ar,63,0.0,1000.0,/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_hayashi_database_e_ar_elastic.csv
+IAA (IAA),iaa_iaa,ELASTIC,Ar,209,0.0,10000.0,/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_iaa_iaa_e_ar_elastic.csv
+IST-Lisbon database,ist_lisbon_database,ELASTIC,Ar,60,0.0,1000.0,/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_ist_lisbon_database_e_ar_elastic.csv
+Morgan (Kinema Research  Software),morgan_kinema_research_software,ELASTIC,Ar,60,0.0,75.0,/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_morgan_kinema_research_software_e_ar_elastic.csv
+Puech database,puech_database,ELASTIC,Ar,67,0.0,150.0,/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_puech_database_e_ar_elastic.csv

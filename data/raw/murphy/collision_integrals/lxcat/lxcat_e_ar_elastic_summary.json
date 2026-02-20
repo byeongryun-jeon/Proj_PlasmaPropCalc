@@ -1,0 +1,97 @@
+{
+  "input_file": "/home/brjeon/matfLookUpPython/lxcatData.txt",
+  "process": "ELASTIC",
+  "n_databases": 9,
+  "models": [
+    {
+      "database": "BSR (Quantum-mechanical calculations by O. Zatsarinny and K. Bartschat)",
+      "slug": "bsr_quantum_mechanical_calculations_by_o_zatsarinny_and_k_bartschat",
+      "process": "ELASTIC",
+      "target": "Ar",
+      "n_points": 462,
+      "E_min_eV": 0.0,
+      "E_max_eV": 300.0014,
+      "output_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_bsr_quantum_mechanical_calculations_by_o_zatsarinny_and_k_bartschat_e_ar_elastic.csv"
+    },
+    {
+      "database": "Biagi (transcription of data from SF Biagi's Fortran code, Magboltz.)",
+      "slug": "biagi_transcription_of_data_from_sf_biagi_s_fortran_code_magboltz",
+      "process": "ELASTIC",
+      "target": "Ar",
+      "n_points": 282,
+      "E_min_eV": 0.0,
+      "E_max_eV": 965.05,
+      "output_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_biagi_transcription_of_data_from_sf_biagi_s_fortran_code_magboltz_e_ar_elastic.csv"
+    },
+    {
+      "database": "Biagi-v7.1 (Magboltz version 7.1)",
+      "slug": "biagi_v7_1_magboltz_version_7_1",
+      "process": "ELASTIC",
+      "target": "Ar",
+      "n_points": 202,
+      "E_min_eV": 0.0,
+      "E_max_eV": 965.0509,
+      "output_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_biagi_v7_1_magboltz_version_7_1_e_ar_elastic.csv"
+    },
+    {
+      "database": "COP (Complex Optical Potential)",
+      "slug": "cop_complex_optical_potential",
+      "process": "ELASTIC",
+      "target": "Ar",
+      "n_points": 440,
+      "E_min_eV": 0.0,
+      "E_max_eV": 1000.0,
+      "output_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_cop_complex_optical_potential_e_ar_elastic.csv"
+    },
+    {
+      "database": "Hayashi database",
+      "slug": "hayashi_database",
+      "process": "ELASTIC",
+      "target": "Ar",
+      "n_points": 63,
+      "E_min_eV": 0.0,
+      "E_max_eV": 1000.0,
+      "output_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_hayashi_database_e_ar_elastic.csv"
+    },
+    {
+      "database": "IAA (IAA)",
+      "slug": "iaa_iaa",
+      "process": "ELASTIC",
+      "target": "Ar",
+      "n_points": 209,
+      "E_min_eV": 0.0,
+      "E_max_eV": 10000.0,
+      "output_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_iaa_iaa_e_ar_elastic.csv"
+    },
+    {
+      "database": "IST-Lisbon database",
+      "slug": "ist_lisbon_database",
+      "process": "ELASTIC",
+      "target": "Ar",
+      "n_points": 60,
+      "E_min_eV": 0.0,
+      "E_max_eV": 1000.0,
+      "output_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_ist_lisbon_database_e_ar_elastic.csv"
+    },
+    {
+      "database": "Morgan (Kinema Research  Software)",
+      "slug": "morgan_kinema_research_software",
+      "process": "ELASTIC",
+      "target": "Ar",
+      "n_points": 60,
+      "E_min_eV": 0.0,
+      "E_max_eV": 75.0,
+      "output_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_morgan_kinema_research_software_e_ar_elastic.csv"
+    },
+    {
+      "database": "Puech database",
+      "slug": "puech_database",
+      "process": "ELASTIC",
+      "target": "Ar",
+      "n_points": 67,
+      "E_min_eV": 0.0,
+      "E_max_eV": 150.0,
+      "output_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/lxcat/lxcat_puech_database_e_ar_elastic.csv"
+    }
+  ]
+}

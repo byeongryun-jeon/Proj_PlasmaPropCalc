@@ -4,24 +4,24 @@
   <pair s1="e-" s2="Ar">
     <Q11 type="table" units="K,Å-Å" ref="Milloy1977+Frost1964">
       1000 2000 4000 5000 6000 8000 10000 15000 20000,
-      0.69193 0.52012 0.89467 1.1343 1.3862 1.9404 2.5791 4.4359 6.3193
+      0.69065 0.50994 0.88277 1.1219 1.3677 1.8721 2.3952 3.7705 5.1555
     </Q11>
     <Q22 type="table" units="K,Å-Å" ref="Murphy2014 assumption Omega22=Omega11">
       1000 2000 4000 5000 6000 8000 10000 15000 20000,
-      0.69193 0.52012 0.89467 1.1343 1.3862 1.9404 2.5791 4.4359 6.3193
+      0.69065 0.50994 0.88277 1.1219 1.3677 1.8721 2.3952 3.7705 5.1555
     </Q22>
     <Bst type="constant" value="1.0" ref="placeholder"/>
     <Cst type="constant" value="1.0" ref="placeholder"/>
   </pair>
 
   <pair s1="Ar" s2="Ar">
-    <Q11 type="table" units="K,Å-Å" ref="Aziz1990+LJ surrogate">
+    <Q11 type="table" units="K,Å-Å" ref="Aziz1990 HFDTCS2 classical scattering (HFD form)">
       1000 2000 4000 5000 6000 8000 10000 15000 20000,
-      27.988 24.876 22.313 21.549 20.944 20.024 19.338 18.152 17.355
+      29.11 25.636 22.424 21.427 20.624 19.379 18.441 16.878 15.966
     </Q11>
-    <Q22 type="table" units="K,Å-Å" ref="Aziz1990+LJ surrogate">
+    <Q22 type="table" units="K,Å-Å" ref="Aziz1990 HFDTCS2 classical scattering (HFD form)">
       1000 2000 4000 5000 6000 8000 10000 15000 20000,
-      30.903 27.771 25.046 24.228 23.58 22.592 21.854 20.575 19.713
+      31.371 28.128 24.97 23.96 23.138 21.855 20.903 19.423 18.655
     </Q22>
     <Bst type="constant" value="1.15" ref="Wright2005 default neutral-neutral"/>
     <Cst type="constant" value="0.92" ref="Wright2005 default neutral-neutral"/>
@@ -30,11 +30,11 @@
   <pair s1="Ar" s2="Ar+">
     <Q11 type="table" units="K,Å-Å" ref="MurphyTam2014+Aubreton1986 model">
       1000 2000 4000 5000 6000 8000 10000 15000 20000,
-      132.93 121.88 112.88 110.26 108.2 105.06 102.71 98.602 95.792
+      130.79 121.66 113.62 111.16 109.19 106.14 103.82 99.705 96.85
     </Q11>
     <Q22 type="table" units="K,Å-Å" ref="MurphyTam2014+Aubreton1986 model">
       1000 2000 4000 5000 6000 8000 10000 15000 20000,
-      124.33 115 106.99 104.6 102.69 99.772 97.568 93.679 91.001
+      27.583 27.082 25.809 24.956 24.208 22.993 22.034 20.265 19.007
     </Q22>
     <Bst type="constant" value="1.20" ref="Wright2005 default ion-neutral"/>
     <Cst type="constant" value="0.85" ref="Wright2005 default ion-neutral"/>
