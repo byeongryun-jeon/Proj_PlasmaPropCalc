@@ -1272,7 +1272,7 @@ def main() -> None:
             "kappa_int": "Hirschfelder-Eucken internal conductivity (algebraic)",
             "kappa_reac": "Butler-Brokaw-style composition-gradient term",
             "sigma": "Devoto 3rd-order electron conductivity from Lee matrix inverse",
-            "electron_missing_integrals": "Q14ei=Q13ei, Q15ei=Q13ei (Mutation++ default ratio fallback); Q23ee/Q24ee from Mutation++ Debye-Huckel table",
+            "electron_missing_integrals": "Q14ei=Q13ei, Q15ei=Q13ei (default ratio fallback); Q23ee/Q24ee from Debye-Huckel table",
         },
         "constants": {
             "reaction_scale": args.reaction_scale,
