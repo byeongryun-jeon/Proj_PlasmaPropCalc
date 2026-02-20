@@ -155,16 +155,16 @@ $$
 
 ### 5.1 종별 엔탈피
 
-코드에서 먼저 종별 \(d\ln Q/dT\)를 수치미분으로 계산:
+코드에서 먼저 종별 미분항 \(\frac{d}{dT}\ln Q_{\mathrm{int},i}(T)\)를 수치미분으로 계산:
 
 $$
-\frac{d\ln Q_{\mathrm{int},i}}{dT}
+\frac{d\ln Q_{\mathrm{int},i}(T)}{dT}
 $$
 
 종별 엔탈피(입자 기준, eV):
 
 $$
-H_i(T)\,[\mathrm{eV}] = \frac{5}{2}k_B T + k_B T^2\frac{d\ln Q_{\mathrm{int},i}}{dT} + E_{\mathrm{ion},i}
+H_i(T)\,[\mathrm{eV}] = \frac{5}{2}k_B T + k_B T^2\frac{d\ln Q_{\mathrm{int},i}(T)}{dT} + E_{\mathrm{ion},i}
 $$
 
 단위변환:
@@ -200,7 +200,18 @@ $$
 
 출력 단위는 주로 \(m^2\)이며, 병행으로 \(A^2\) 컬럼도 저장한다.
 
-### 6.1 Ar-Ar (neutral-neutral)
+### 6.1 충돌적분 계산 계수 및 관련 문헌
+
+| 블록 | 핵심 계수 | 코드 적용값/정의 | 데이터/논문 출처 |
+|---|---|---|---|
+| Ar-Ar (neutral-neutral) | \(\epsilon/k,\ \sigma\) | \(\epsilon/k=143.25\ \mathrm{K},\ \sigma=3.3560\ \AA\) | Aziz et al. (1990), `aziz1990_hfdtcs2_constants.csv` |
+| Ar-Ar+ charge exchange | \(A_k,\ B_k,\ w_k\) | \(^2\Sigma: A=8.921,\ B=0.3960,\ w=1/3;\ ^2\Pi: A=6.189,\ B=0.2934,\ w=2/3\) | Murphy and Tam (2014), `AR_ARP_CX_STATES` |
+| Ar-Ar+ elastic (capture) | \(\alpha_{\mathrm{Ar}},\ z\) | \(\alpha_{\mathrm{Ar}}=1.6411\times10^{-30}\ \mathrm{m^3}\), \(z=1\) (Ar+), \(z=2,3,4\)는 확장 계산 | Ar polarizability 상수 + 코드 모델 `q_ar_arp_elastic_langevin_a2` |
+| Ar-Ar2+/Ar-Ar3+/Ar-Ar4+ | \(\sqrt{z}\) 스케일 | \(Q_{11},Q_{22}\propto\sqrt{z}\), \(z=2,3,4\) | 코드 가정(`notes`: sqrt(z) scaling) |
+| e-Ar | \(Q_m(E)\) | Milloy 표 + Frost 고에너지 확장, Maxwell 적분으로 \(Q_{11},Q_{22},Q_{14},Q_{15}\) 생성 | Milloy (1977), Frost (1964), `milloy1977_*.csv`, `frost1964_*.csv` |
+| charged-charged | \( (T^\*)^2\Omega,\ A^\*,B^\*,C^\* \) | Mason 표 보간 + Debye 길이로 환산, `coulomb_lnlambda_scale` 적용 | Mason et al. (1967), `mason1967_tableI_t2omega.csv`, `mason1967_tableII_abc.csv` |
+
+### 6.2 Ar-Ar (neutral-neutral)
 
 LJ surrogate:
 
@@ -225,7 +236,7 @@ Q_{11}=\Omega_{11}^\*\pi\sigma^2,\qquad
 Q_{22}=\Omega_{22}^\*\pi\sigma^2
 $$
 
-### 6.2 Ar-Ar+ (ion-neutral)
+### 6.3 Ar-Ar+ (ion-neutral)
 
 공명 charge exchange:
 
@@ -257,7 +268,7 @@ $$
 
 즉, `Ar-Ar2+`, `Ar-Ar3+`, `Ar-Ar4+` 행이 `argon_collision_integrals_non_charged.csv`에 포함된다.
 
-### 6.3 e-Ar (electron-neutral)
+### 6.4 e-Ar (electron-neutral)
 
 에너지 단면적 \(Q_m(E)\)를 Milloy+Frost 데이터로 구성하고, 코드에서 다음 가중 평균을 사용:
 
@@ -287,7 +298,7 @@ $$
 
 여기서 \(\beta=\)`--e-ar-high-order-blend` (기본 0.0).
 
-### 6.4 charged-charged (screened Coulomb)
+### 6.5 charged-charged (screened Coulomb)
 
 Debye 길이:
 
