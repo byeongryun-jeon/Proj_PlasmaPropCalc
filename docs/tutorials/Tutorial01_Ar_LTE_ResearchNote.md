@@ -589,8 +589,8 @@ MATF와의 수치 정합을 우선할 경우, transport 단계에서 아래 옵�
 ## 8. 결과 그래프 (GitHub 렌더링)
 
 아래 요약 그래프(`rho`, `h`, `Cp`, `mu`, `kappa`, `sigma`)는
-실선(`This work`)과 점선(`MATF`)을 함께 표시한다.
-`kappa components` 그래프는 요청대로 MATF 점선을 추가하지 않는다.
+실선(`This work`), 점선(`MATF`), 일점쇄선(`Mutationpp`)을 함께 표시한다.
+`kappa components` 그래프는 구성요소 분해용 그림이라 오버레이를 추가하지 않는다.
 
 현재 그림은 `--murphy-strict --k-reac-model legacy_composite` 실행 결과를 기준으로 업데이트되어 있다.
 
@@ -598,29 +598,29 @@ MATF와의 수치 정합을 우선할 경우, transport 단계에서 아래 옵�
 
 `rho vs T`
 
-![rho vs T](../../data/processed/thermo/plots/rho_vs_T.png)
+![rho vs T](../../data/processed/thermo/plots/rho_vs_T_compare3.png)
 
 `h vs T` (specific enthalpy)
 
-![h vs T](../../data/processed/thermo/plots/h_vs_T.png)
+![h vs T](../../data/processed/thermo/plots/h_vs_T_compare3.png)
 
 `Cp vs T (0~30000 K)`
 
-![Cp vs T 0-30000K](../../data/processed/thermo/plots/cp_vs_T_0_30000K.png)
+![Cp vs T 0-30000K](../../data/processed/thermo/plots/cp_vs_T_0_30000K_compare3.png)
 
 ### 8.2 Transport
 
 `mu vs T`
 
-![mu vs T](../../data/processed/transport_properties/plots/mu_vs_T.png)
+![mu vs T](../../data/processed/transport_properties/plots/mu_vs_T_compare3.png)
 
 `kappa vs T`
 
-![kappa vs T](../../data/processed/transport_properties/plots/kappa_vs_T.png)
+![kappa vs T](../../data/processed/transport_properties/plots/kappa_vs_T_compare3.png)
 
 `sigma vs T`
 
-![sigma vs T](../../data/processed/transport_properties/plots/sigma_vs_T.png)
+![sigma vs T](../../data/processed/transport_properties/plots/sigma_vs_T_compare3.png)
 
 `kappa components @ 1 atm`
 
