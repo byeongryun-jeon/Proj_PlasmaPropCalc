@@ -1,0 +1,81 @@
+{
+  "inputs": {
+    "equilibrium_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/equilibrium/argon_lte_equilibrium_0p1_1_4atm.csv",
+    "thermo_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_thermo_0p1_1_4atm.csv",
+    "collision_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport/argon_collision_integrals_all.csv",
+    "partition_json": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/partition_functions/partition_functions_Ar_system.json"
+  },
+  "collision_mapping": {
+    "format": "long",
+    "q11_column": "Q11_m2",
+    "q22_column": "Q22_m2",
+    "ast_column": "Ast",
+    "bst_column": "Bst",
+    "cst_column": "Cst"
+  },
+  "collision_rows_loaded": 7200,
+  "fallback_counts": {
+    "Ar-Ar2+:scaled_from_Ar-Ar+": 1350,
+    "Ar-Ar3+:scaled_from_Ar-Ar+": 1350,
+    "Ar-Ar4+:scaled_from_Ar-Ar+": 1350
+  },
+  "approximations": {
+    "viscosity": "Devoto 1st-order Chapman-Enskog heavy-species coefficient matrix",
+    "kappa_H": "Devoto/Muckenfuss-Curtiss 2nd-order heavy-species coefficient matrix",
+    "kappa_e": "Devoto 3rd-order electron Lee matrix",
+    "kappa_int": "Hirschfelder-Eucken internal conductivity (algebraic)",
+    "kappa_reac": "Butler-Brokaw-style composition-gradient term",
+    "sigma": "Devoto 3rd-order electron conductivity from Lee matrix inverse",
+    "electron_missing_integrals": "Q14ei=Q13ei, Q15ei=Q13ei (Mutation++ default ratio fallback); Q23ee/Q24ee from Mutation++ Debye-Huckel table"
+  },
+  "constants": {
+    "reaction_scale": 1.0,
+    "pr_heavy": 0.67,
+    "pr_int": 1.0
+  },
+  "peaks": {
+    "0.1 atm": {
+      "mu_peak_T_K": 4500.0,
+      "mu_peak_Pa_s": 0.00014053688109073246,
+      "kappa_peak_T_K": 30000.0,
+      "kappa_peak_W_mK": 2.752918213112116,
+      "kappa_reac_peak_T_K": 22300.0,
+      "kappa_reac_peak_W_mK": 0.07329950524129142,
+      "sigma_peak_T_K": 21900.0,
+      "sigma_peak_S_m": 218908.0259926524
+    },
+    "1 atm": {
+      "mu_peak_T_K": 4700.0,
+      "mu_peak_Pa_s": 0.00014542257254578368,
+      "kappa_peak_T_K": 30000.0,
+      "kappa_peak_W_mK": 3.544055304958366,
+      "kappa_reac_peak_T_K": 27500.0,
+      "kappa_reac_peak_W_mK": 0.042212319543150224,
+      "sigma_peak_T_K": 24100.0,
+      "sigma_peak_S_m": 391648.9997454775
+    },
+    "4 atm": {
+      "mu_peak_T_K": 4900.0,
+      "mu_peak_Pa_s": 0.00014892362480213039,
+      "kappa_peak_T_K": 30000.0,
+      "kappa_peak_W_mK": 4.258779916795855,
+      "kappa_reac_peak_T_K": 30000.0,
+      "kappa_reac_peak_W_mK": 0.02136259199467537,
+      "sigma_peak_T_K": 25100.0,
+      "sigma_peak_S_m": 1130506.6377971314
+    }
+  },
+  "notes": [
+    "kappa_reac peak should be inspected in ionization region (typically O(1e4-2e4 K), pressure dependent).",
+    "compute_transport_for_state() uses strict Devoto-style coefficient matrices for mu, kappa_H, kappa_e, and sigma."
+  ],
+  "outputs": {
+    "combined_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport_properties/argon_transport_0p1_1_4atm.csv",
+    "per_pressure_csv": [
+      "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport_properties/argon_transport_0p1atm.csv",
+      "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport_properties/argon_transport_1atm.csv",
+      "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport_properties/argon_transport_4atm.csv"
+    ],
+    "plots_dir": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport_properties/plots"
+  }
+}
