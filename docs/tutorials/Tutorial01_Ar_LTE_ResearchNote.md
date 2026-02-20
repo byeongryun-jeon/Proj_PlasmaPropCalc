@@ -674,6 +674,22 @@ ALL 압력 평균 오차 요약(`kappa_model_metrics_vs_matf.csv`):
 ![kappa comp 1atm butler mole](../../data/processed/transport_properties/model_scan/butler_mole/plots/kappa_components_1atm.png)
 ![kappa comp 1atm butler mole cp](../../data/processed/transport_properties/model_scan/butler_mole_cp/plots/kappa_components_1atm.png)
 
+`mu vs T` (model별):
+
+![mu vs T auto](../../data/processed/transport_properties/model_scan/auto/plots/mu_vs_T.png)
+![mu vs T legacy](../../data/processed/transport_properties/model_scan/legacy_composite/plots/mu_vs_T.png)
+![mu vs T butler mass](../../data/processed/transport_properties/model_scan/butler_mass/plots/mu_vs_T.png)
+![mu vs T butler mole](../../data/processed/transport_properties/model_scan/butler_mole/plots/mu_vs_T.png)
+![mu vs T butler mole cp](../../data/processed/transport_properties/model_scan/butler_mole_cp/plots/mu_vs_T.png)
+
+`sigma vs T` (model별):
+
+![sigma vs T auto](../../data/processed/transport_properties/model_scan/auto/plots/sigma_vs_T.png)
+![sigma vs T legacy](../../data/processed/transport_properties/model_scan/legacy_composite/plots/sigma_vs_T.png)
+![sigma vs T butler mass](../../data/processed/transport_properties/model_scan/butler_mass/plots/sigma_vs_T.png)
+![sigma vs T butler mole](../../data/processed/transport_properties/model_scan/butler_mole/plots/sigma_vs_T.png)
+![sigma vs T butler mole cp](../../data/processed/transport_properties/model_scan/butler_mole_cp/plots/sigma_vs_T.png)
+
 ## 9. 재현 실행
 
 ```bash
