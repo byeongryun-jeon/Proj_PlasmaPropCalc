@@ -538,6 +538,11 @@ $$
 최종 조합은 `--k-reac-model` 선택(`legacy_composite`, `butler_mass`, `butler_mole`, `butler_mole_cp`)과
 `--reaction-scale`을 따른다.
 
+`--k-reac-model=auto`일 때 기본값은 다음과 같다.
+
+- 기본 모드: `legacy_composite`
+- `--murphy-strict` 모드: `butler_mole`
+
 ### 7.6 최종 합성
 
 $$
@@ -550,11 +555,44 @@ $$
 - `data/processed/transport_properties/argon_transport_sensitivity_report.json`
 - `data/processed/transport_properties/argon_transport_metadata.json`
 
+### 7.7 `kappa` 불일치 진단 (MATF 대비)
+
+동일 격자(`T=300~30000 K`, `P=0.1/1/4 atm`) 비교 결과:
+
+- strict 기본(`--murphy-strict`, `k_reac=butler_mole(auto)`)
+  - `mu` 평균 APE: `3.39%`
+  - `kappa` 평균 APE: `10.69%`
+  - `sigma` 평균 APE: `17.46%`
+- strict + MATF 정합 옵션(`--murphy-strict --k-reac-model legacy_composite`)
+  - `mu` 평균 APE: `3.39%`
+  - `kappa` 평균 APE: `10.22%`
+  - `sigma` 평균 APE: `17.46%`
+
+`kappa` 오차는 이온화 구간(`8,000~18,000 K`)에서 가장 크게 나타난다.
+대표적으로 `0.1 atm, 12100 K`에서:
+
+- strict 기본: `kappa = 0.778 W/(m K)` (MATF `1.895`) -> `58.97%` 과소예측
+- strict + legacy: `kappa = 2.210 W/(m K)` (MATF `1.895`) -> `16.59%` 과대예측
+
+이 지점에서 지배 원인은 `k_reac` 모델 선택이다.
+
+- strict 기본(`butler_mole`)일 때 `k_reac ≈ 0.058 W/(m K)`
+- 같은 충돌적분에서 `legacy_composite`일 때 `k_reac ≈ 1.490 W/(m K)`
+
+즉, `mu/sigma`는 충돌적분과 전자 3차 행렬계에 주로 좌우되어 경향이 유지되지만,
+`kappa`는 `k_reac` closure에 매우 민감하게 반응한다.
+
+MATF와의 수치 정합을 우선할 경우, transport 단계에서 아래 옵션을 권장한다.
+
+- `--k-reac-model legacy_composite` 또는 `--k-reac-model butler_mole_cp`
+
 ## 8. 결과 그래프 (GitHub 렌더링)
 
 아래 요약 그래프(`rho`, `h`, `Cp`, `mu`, `kappa`, `sigma`)는
 실선(`This work`)과 점선(`MATF`)을 함께 표시한다.
 `kappa components` 그래프는 요청대로 MATF 점선을 추가하지 않는다.
+
+현재 그림은 `--murphy-strict --k-reac-model legacy_composite` 실행 결과를 기준으로 업데이트되어 있다.
 
 ### 8.1 Thermodynamic
 
@@ -594,8 +632,14 @@ $$
 python3 scripts/murphy/build_partition_functions.py
 python3 scripts/murphy/solve_argon_lte_equilibrium.py
 python3 scripts/murphy/build_thermo_properties.py
-python3 scripts/murphy/build_collision_integrals.py
-python3 scripts/murphy/build_transport_properties.py
+python3 scripts/murphy/build_collision_integrals.py --murphy-strict
+python3 scripts/murphy/build_transport_properties.py --murphy-strict
+```
+
+`kappa` MATF 정합 우선 실행:
+
+```bash
+python3 scripts/murphy/build_transport_properties.py --murphy-strict --k-reac-model legacy_composite
 ```
 
 ## 10. 참고

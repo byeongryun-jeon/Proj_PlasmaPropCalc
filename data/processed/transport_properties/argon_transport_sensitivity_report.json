@@ -64,10 +64,10 @@
       "lee3_offdiag_to_diag_mean": 0.8388546547208109
     },
     "output_stage": {
-      "kappa_share_H_mean": 0.28422441381652114,
-      "kappa_share_e_mean": 0.705628011911879,
-      "kappa_share_int_mean": 0.0005154445396392926,
-      "kappa_share_reac_mean": 0.009632129731960612
+      "kappa_share_H_mean": 0.25769291321609217,
+      "kappa_share_e_mean": 0.6052403255998687,
+      "kappa_share_int_mean": 0.00027277536699300196,
+      "kappa_share_reac_mean": 0.13679398581704613
     }
   },
   "1 atm": {
@@ -135,10 +135,10 @@
       "lee3_offdiag_to_diag_mean": 0.7841597746859422
     },
     "output_stage": {
-      "kappa_share_H_mean": 0.30562294035784077,
-      "kappa_share_e_mean": 0.6864628874834297,
-      "kappa_share_int_mean": 0.0022241904995753095,
-      "kappa_share_reac_mean": 0.005689981659154255
+      "kappa_share_H_mean": 0.2835081509254066,
+      "kappa_share_e_mean": 0.5799105302764153,
+      "kappa_share_int_mean": 0.0013482529775996944,
+      "kappa_share_reac_mean": 0.13523306582057845
     }
   },
   "4 atm": {
@@ -206,10 +206,10 @@
       "lee3_offdiag_to_diag_mean": 0.7454620953491549
     },
     "output_stage": {
-      "kappa_share_H_mean": 0.31995689266080957,
-      "kappa_share_e_mean": 0.6709115536863602,
-      "kappa_share_int_mean": 0.005213556865275191,
-      "kappa_share_reac_mean": 0.0039179967875550585
+      "kappa_share_H_mean": 0.3009243478814281,
+      "kappa_share_e_mean": 0.565850016228993,
+      "kappa_share_int_mean": 0.0034680750113715297,
+      "kappa_share_reac_mean": 0.12975756087820733
     }
   }
 }
