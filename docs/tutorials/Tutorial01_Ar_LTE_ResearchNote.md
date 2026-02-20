@@ -48,7 +48,7 @@ $$
 - 전자 내부 분배함수는 상수로 고정:
 
 $$
-Q_{\mathrm{int},e^-}(T) = 2
+Q_{\mathrm{int},e^{-}}(T) = 2
 $$
 
 ### 3.3 누적 이온화 에너지
@@ -61,7 +61,7 @@ E_{\mathrm{ion},\mathrm{Ar}^{(z+1)+}} = E_{\mathrm{ion},\mathrm{Ar}^{z+}} + E_{\
 $$
 
 $$
-E_{\mathrm{ion},e^-}=0
+E_{\mathrm{ion},e^{-}}=0
 $$
 
 ## 4. Phase 2: LTE 평형 조성 솔버
@@ -71,7 +71,7 @@ $$
 미지수:
 
 $$
-\mathbf{x} = [\ln n_{\mathrm{Ar}},\ln n_{\mathrm{Ar^+}},\ln n_{\mathrm{Ar^{2+}}},\ln n_{\mathrm{Ar^{3+}}},\ln n_{\mathrm{Ar^{4+}}},\ln n_e]
+\mathbf{x} = [\ln n_{\mathrm{Ar}},\ln n_{\mathrm{Ar}^{+}},\ln n_{\mathrm{Ar}^{2+}},\ln n_{\mathrm{Ar}^{3+}},\ln n_{\mathrm{Ar}^{4+}},\ln n_e]
 $$
 
 ### 4.1 열 드브로이 파장과 화학 퍼텐셜
@@ -95,25 +95,25 @@ $$
 Saha 형태(화학 퍼텐셜 평형) 4개:
 
 $$
-\mu_{\mathrm{Ar}}-\mu_{\mathrm{Ar^+}}-\mu_e = 0
+\mu_{\mathrm{Ar}}-\mu_{\mathrm{Ar}^{+}}-\mu_e = 0
 $$
 
 $$
-\mu_{\mathrm{Ar^+}}-\mu_{\mathrm{Ar^{2+}}}-\mu_e = 0
+\mu_{\mathrm{Ar}^{+}}-\mu_{\mathrm{Ar}^{2+}}-\mu_e = 0
 $$
 
 $$
-\mu_{\mathrm{Ar^{2+}}}-\mu_{\mathrm{Ar^{3+}}}-\mu_e = 0
+\mu_{\mathrm{Ar}^{2+}}-\mu_{\mathrm{Ar}^{3+}}-\mu_e = 0
 $$
 
 $$
-\mu_{\mathrm{Ar^{3+}}}-\mu_{\mathrm{Ar^{4+}}}-\mu_e = 0
+\mu_{\mathrm{Ar}^{3+}}-\mu_{\mathrm{Ar}^{4+}}-\mu_e = 0
 $$
 
 전하중성(로그-비 형태):
 
 $$
-\ln n_e-\ln\!\left(n_{\mathrm{Ar^+}}+2n_{\mathrm{Ar^{2+}}}+3n_{\mathrm{Ar^{3+}}}+4n_{\mathrm{Ar^{4+}}}\right)=0
+\ln n_e-\ln\!\left(n_{\mathrm{Ar}^{+}}+2n_{\mathrm{Ar}^{2+}}+3n_{\mathrm{Ar}^{3+}}+4n_{\mathrm{Ar}^{4+}}\right)=0
 $$
 
 상태방정식:
@@ -158,13 +158,13 @@ $$
 코드에서 먼저 종별 미분항 \(\frac{d}{dT}\ln Q_{\mathrm{int},i}(T)\)를 수치미분으로 계산:
 
 $$
-\frac{d\ln Q_{\mathrm{int},i}(T)}{dT}
+\frac{d}{dT}\ln Q_{\mathrm{int},i}(T)
 $$
 
 종별 엔탈피(입자 기준, eV):
 
 $$
-H_i(T)\,[\mathrm{eV}] = \frac{5}{2}k_B T + k_B T^2\frac{d\ln Q_{\mathrm{int},i}(T)}{dT} + E_{\mathrm{ion},i}
+H_i(T)\,[\mathrm{eV}] = \frac{5}{2}k_B T + k_B T^2\frac{d}{dT}\ln Q_{\mathrm{int},i}(T) + E_{\mathrm{ion},i}
 $$
 
 단위변환:
@@ -296,7 +296,7 @@ Q_{14}=(1-\beta)Q_{11}+\beta Q_{14}^{\mathrm{moment}},\qquad
 Q_{15}=(1-\beta)Q_{11}+\beta Q_{15}^{\mathrm{moment}}
 $$
 
-여기서 \(\beta=\)`--e-ar-high-order-blend` (기본 0.0).
+여기서 \(\beta\)는 옵션 `--e-ar-high-order-blend` (기본 0.0)이다.
 
 ### 6.5 charged-charged (screened Coulomb)
 
@@ -370,7 +370,7 @@ $$
 
 ### 7.2 점성 \( \mu \): heavy 1차 Devoto 행렬
 
-heavy species \(i,j\in\{\mathrm{Ar},\mathrm{Ar^+},\mathrm{Ar^{2+}},\mathrm{Ar^{3+}},\mathrm{Ar^{4+}}\}\)에 대해
+heavy species \(i,j\in\{\mathrm{Ar},\mathrm{Ar}^{+},\mathrm{Ar}^{2+},\mathrm{Ar}^{3+},\mathrm{Ar}^{4+}\}\)에 대해
 행렬 \(A_\mu\alpha_\mu=x_h\)를 구성한다.
 
 코드 핵심 계수:
