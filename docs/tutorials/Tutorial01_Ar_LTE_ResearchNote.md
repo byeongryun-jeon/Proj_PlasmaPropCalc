@@ -204,12 +204,12 @@ $$
 
 | 블록 | 핵심 계수 | 코드 적용값/정의 | 데이터/논문 출처 |
 |---|---|---|---|
-| Ar-Ar (neutral-neutral) | \(\epsilon/k,\ \sigma\) | \(\epsilon/k=143.25\ \mathrm{K},\ \sigma=3.3560\ \AA\) | Aziz et al. (1990), `aziz1990_hfdtcs2_constants.csv` |
-| Ar-Ar+ charge exchange | \(A_k,\ B_k,\ w_k\) | \(^2\Sigma: A=8.921,\ B=0.3960,\ w=1/3;\ ^2\Pi: A=6.189,\ B=0.2934,\ w=2/3\) | Murphy and Tam (2014), `AR_ARP_CX_STATES` |
-| Ar-Ar+ elastic (capture) | \(\alpha_{\mathrm{Ar}},\ z\) | \(\alpha_{\mathrm{Ar}}=1.6411\times10^{-30}\ \mathrm{m^3}\), \(z=1\) (Ar+), \(z=2,3,4\)는 확장 계산 | Ar polarizability 상수 + 코드 모델 `q_ar_arp_elastic_langevin_a2` |
-| Ar-Ar2+/Ar-Ar3+/Ar-Ar4+ | \(\sqrt{z}\) 스케일 | \(Q_{11},Q_{22}\propto\sqrt{z}\), \(z=2,3,4\) | 코드 가정(`notes`: sqrt(z) scaling) |
-| e-Ar | \(Q_m(E)\) | Milloy 표 + Frost 고에너지 확장, Maxwell 적분으로 \(Q_{11},Q_{22},Q_{14},Q_{15}\) 생성 | Milloy (1977), Frost (1964), `milloy1977_*.csv`, `frost1964_*.csv` |
-| charged-charged | \( (T^\*)^2\Omega,\ A^\*,B^\*,C^\* \) | Mason 표 보간 + Debye 길이로 환산, `coulomb_lnlambda_scale` 적용 | Mason et al. (1967), `mason1967_tableI_t2omega.csv`, `mason1967_tableII_abc.csv` |
+| Ar-Ar (neutral-neutral) | `epsilon/k`, `sigma` | `epsilon/k = 143.25 K`, `sigma = 3.3560 Angstrom` | Aziz et al. (1990), `aziz1990_hfdtcs2_constants.csv` |
+| Ar-Ar+ charge exchange | `A_k`, `B_k`, `w_k` | `2Sigma: A=8.921, B=0.3960, w=1/3; 2Pi: A=6.189, B=0.2934, w=2/3` | Murphy and Tam (2014), `AR_ARP_CX_STATES` |
+| Ar-Ar+ elastic (capture) | `alpha_Ar`, `z` | `alpha_Ar = 1.6411e-30 m^3`, `z=1` (Ar+), `z=2,3,4`는 확장 계산 | Ar polarizability 상수 + 코드 모델 `q_ar_arp_elastic_langevin_a2` |
+| Ar-Ar2+/Ar-Ar3+/Ar-Ar4+ | `sqrt(z)` 스케일 | `Q11, Q22 ~ sqrt(z)`, `z=2,3,4` | 코드 가정 (`notes`: sqrt(z) scaling) |
+| e-Ar | `Q_m(E)` | Milloy 표 + Frost 고에너지 확장, Maxwell 적분으로 `Q11, Q22, Q14, Q15` 생성 | Milloy (1977), Frost (1964), `milloy1977_*.csv`, `frost1964_*.csv` |
+| charged-charged | `(T*)^2 Omega`, `A*`, `B*`, `C*` | Mason 표 보간 + Debye 길이로 환산, `coulomb_lnlambda_scale` 적용 | Mason et al. (1967), `mason1967_tableI_t2omega.csv`, `mason1967_tableII_abc.csv` |
 
 ### 6.2 Ar-Ar (neutral-neutral)
 
