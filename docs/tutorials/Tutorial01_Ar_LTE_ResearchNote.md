@@ -626,6 +626,54 @@ MATF와의 수치 정합을 우선할 경우, transport 단계에서 아래 옵�
 
 ![kappa components 1atm](../../data/processed/transport_properties/plots/kappa_components_1atm.png)
 
+### 8.3 `kappa` 모델 스캔 이미지 (all models)
+
+생성 경로:
+
+- `data/processed/transport_properties/model_scan/{model}/plots/kappa_vs_T.png`
+- `data/processed/transport_properties/model_scan/{model}/plots/kappa_components_1atm.png`
+- 요약 지표 CSV: `data/processed/transport_properties/model_scan/kappa_model_metrics_vs_matf.csv`
+
+ALL 압력 평균 오차 요약(`kappa_model_metrics_vs_matf.csv`):
+
+| model | mu mean APE [%] | kappa mean APE [%] | sigma mean APE [%] | kappa signed bias [%] |
+|---|---:|---:|---:|---:|
+| legacy_composite | 3.3863 | 10.2182 | 17.4570 | +6.2743 |
+| butler_mole_cp | 3.3863 | 10.3258 | 17.4570 | +6.2322 |
+| butler_mass | 3.3863 | 10.6496 | 17.4570 | -10.0910 |
+| auto | 3.3863 | 10.6929 | 17.4570 | -10.1331 |
+| butler_mole | 3.3863 | 10.6929 | 17.4570 | -10.1331 |
+
+`kappa vs T` (model별):
+
+`auto` (`--murphy-strict` + `--k-reac-model auto`)
+
+![kappa vs T auto](../../data/processed/transport_properties/model_scan/auto/plots/kappa_vs_T.png)
+
+`legacy_composite`
+
+![kappa vs T legacy](../../data/processed/transport_properties/model_scan/legacy_composite/plots/kappa_vs_T.png)
+
+`butler_mass`
+
+![kappa vs T butler mass](../../data/processed/transport_properties/model_scan/butler_mass/plots/kappa_vs_T.png)
+
+`butler_mole`
+
+![kappa vs T butler mole](../../data/processed/transport_properties/model_scan/butler_mole/plots/kappa_vs_T.png)
+
+`butler_mole_cp`
+
+![kappa vs T butler mole cp](../../data/processed/transport_properties/model_scan/butler_mole_cp/plots/kappa_vs_T.png)
+
+`kappa components @ 1 atm` (model별):
+
+![kappa comp 1atm auto](../../data/processed/transport_properties/model_scan/auto/plots/kappa_components_1atm.png)
+![kappa comp 1atm legacy](../../data/processed/transport_properties/model_scan/legacy_composite/plots/kappa_components_1atm.png)
+![kappa comp 1atm butler mass](../../data/processed/transport_properties/model_scan/butler_mass/plots/kappa_components_1atm.png)
+![kappa comp 1atm butler mole](../../data/processed/transport_properties/model_scan/butler_mole/plots/kappa_components_1atm.png)
+![kappa comp 1atm butler mole cp](../../data/processed/transport_properties/model_scan/butler_mole_cp/plots/kappa_components_1atm.png)
+
 ## 9. 재현 실행
 
 ```bash
