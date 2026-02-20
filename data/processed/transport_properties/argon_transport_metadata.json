@@ -32,7 +32,7 @@
     "reaction_scale": 1.0,
     "pr_heavy": 0.67,
     "pr_int": 1.0,
-    "k_reac_model": "butler_mole",
+    "k_reac_model": "legacy_composite",
     "murphy_strict": true
   },
   "peaks": {
@@ -40,9 +40,9 @@
       "mu_peak_T_K": 9100.0,
       "mu_peak_Pa_s": 0.00022711358083372552,
       "kappa_peak_T_K": 30000.0,
-      "kappa_peak_W_mK": 3.7929937891671455,
-      "kappa_reac_peak_T_K": 11900.0,
-      "kappa_reac_peak_W_mK": 0.058127850921037526,
+      "kappa_peak_W_mK": 3.8268229976089607,
+      "kappa_reac_peak_T_K": 11500.0,
+      "kappa_reac_peak_W_mK": 1.6482017600423182,
       "sigma_peak_T_K": 30000.0,
       "sigma_peak_S_m": 8089.889151668092
     },
@@ -50,9 +50,9 @@
       "mu_peak_T_K": 10300.0,
       "mu_peak_Pa_s": 0.0002475727645677853,
       "kappa_peak_T_K": 30000.0,
-      "kappa_peak_W_mK": 4.947080739652131,
-      "kappa_reac_peak_T_K": 13500.0,
-      "kappa_reac_peak_W_mK": 0.04131949430041,
+      "kappa_peak_W_mK": 4.991224862935487,
+      "kappa_reac_peak_T_K": 13100.0,
+      "kappa_reac_peak_W_mK": 1.5422048275196534,
       "sigma_peak_T_K": 30000.0,
       "sigma_peak_S_m": 10981.966006024211
     },
@@ -60,9 +60,9 @@
       "mu_peak_T_K": 11300.0,
       "mu_peak_Pa_s": 0.00026259875035151915,
       "kappa_peak_T_K": 30000.0,
-      "kappa_peak_W_mK": 6.009718595023158,
-      "kappa_reac_peak_T_K": 14700.0,
-      "kappa_reac_peak_W_mK": 0.03247266508668244,
+      "kappa_peak_W_mK": 6.165183884032898,
+      "kappa_reac_peak_T_K": 14500.0,
+      "kappa_reac_peak_W_mK": 1.489092534024476,
       "sigma_peak_T_K": 24300.0,
       "sigma_peak_S_m": 14210.855010303847
     }

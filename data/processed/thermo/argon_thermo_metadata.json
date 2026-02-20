@@ -9,7 +9,8 @@
     "mutationpp_mppequil": "/home/brjeon/Mutationpp/install/bin/mppequil",
     "mutationpp_data_dir": "/home/brjeon/Mutationpp/data",
     "mutationpp_lib_dir": "/home/brjeon/Mutationpp/install/lib",
-    "mutationpp_species_list": "e- Ar Ar+",
+    "mutationpp_species_list": "e- Ar Ar+ Ar2+ Ar3+ Ar4+",
+    "mutationpp_species_list_normalized": "e- Ar Ar+ Ar++ Ar+++ Ar++++",
     "mutationpp_elem_x": "Ar:1.0"
   },
   "species_order": [
@@ -86,6 +87,7 @@
   "mutationpp_overlay": {
     "enabled": true,
     "reference_generated": true,
+    "argon_high_ions_requested": true,
     "error": null
   },
   "dlnQdT_sample": {

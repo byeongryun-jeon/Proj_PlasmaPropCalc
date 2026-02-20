@@ -541,7 +541,7 @@ $$
 `--k-reac-model=auto`일 때 기본값은 다음과 같다.
 
 - 기본 모드: `legacy_composite`
-- `--murphy-strict` 모드: `butler_mole`
+- `--murphy-strict` 모드: `legacy_composite`
 
 ### 7.6 최종 합성
 
@@ -559,20 +559,20 @@ $$
 
 동일 격자(`T=300~30000 K`, `P=0.1/1/4 atm`) 비교 결과:
 
-- strict 기본(`--murphy-strict`, `k_reac=butler_mole(auto)`)
-  - `mu` 평균 APE: `3.39%`
-  - `kappa` 평균 APE: `10.69%`
-  - `sigma` 평균 APE: `17.46%`
-- strict + MATF 정합 옵션(`--murphy-strict --k-reac-model legacy_composite`)
+- strict 기본(`--murphy-strict`, `k_reac=legacy_composite(auto)`)
   - `mu` 평균 APE: `3.39%`
   - `kappa` 평균 APE: `10.22%`
+  - `sigma` 평균 APE: `17.46%`
+- strict + 대안 옵션(`--murphy-strict --k-reac-model butler_mole_cp`)
+  - `mu` 평균 APE: `3.39%`
+  - `kappa` 평균 APE: `10.33%`
   - `sigma` 평균 APE: `17.46%`
 
 `kappa` 오차는 이온화 구간(`8,000~18,000 K`)에서 가장 크게 나타난다.
 대표적으로 `0.1 atm, 12100 K`에서:
 
-- strict 기본: `kappa = 0.778 W/(m K)` (MATF `1.895`) -> `58.97%` 과소예측
-- strict + legacy: `kappa = 2.210 W/(m K)` (MATF `1.895`) -> `16.59%` 과대예측
+- legacy 계열(`legacy_composite`/`butler_mole_cp`)에서는
+  `kappa` 피크의 과소예측이 크게 줄어든다.
 
 이 지점에서 지배 원인은 `k_reac` 모델 선택이다.
 
@@ -593,6 +593,11 @@ MATF와의 수치 정합을 우선할 경우, transport 단계에서 아래 옵�
 `kappa components` 그래프는 구성요소 분해용 그림이라 오버레이를 추가하지 않는다.
 
 현재 그림은 `--murphy-strict --k-reac-model legacy_composite` 실행 결과를 기준으로 업데이트되어 있다.
+
+`Mutationpp` 오버레이는 `Ar4+`까지 반영하기 위해
+`e- Ar Ar+ Ar2+ Ar3+ Ar4+` 조성을 사용하며, 런타임에서
+`Ar2+/Ar3+/Ar4+ -> Ar++/Ar+++/Ar++++` 이름 변환과
+custom species/collision patch를 자동 적용한다.
 
 ### 8.1 Thermodynamic
 

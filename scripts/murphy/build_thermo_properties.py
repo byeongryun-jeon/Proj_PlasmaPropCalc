@@ -23,12 +23,14 @@ import mimetypes
 import os
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 
 # --- Constants ---
 KB_EV_PER_K = 8.617333262e-5
 EV_TO_J = 1.602176634e-19
+AVOGADRO = 6.02214076e23
 MASS_AR = 6.6335209e-26
 MASS_E = 9.1093837e-31
 ATM_TO_BAR = 1.01325
@@ -129,8 +131,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--mutationpp-species-list",
         type=str,
-        default="e- Ar Ar+",
-        help="Species descriptor passed to mppequil --species-list.",
+        default="e- Ar Ar+ Ar2+ Ar3+ Ar4+",
+        help=(
+            "Species descriptor passed to mppequil --species-list. "
+            "Ar2+/Ar3+/Ar4+ are internally mapped to Ar++/Ar+++/Ar++++."
+        ),
     )
     parser.add_argument(
         "--mutationpp-elem-x",
@@ -592,6 +597,110 @@ def write_matf_reference_csv(path: Path, rows: list[dict[str, float]]) -> None:
         writer.writerows(rows)
 
 
+def normalize_mutationpp_species_descriptor(species_list: str) -> str:
+    # Mutationpp uses Ar++, Ar+++, Ar++++ instead of Ar2+, Ar3+, Ar4+.
+    mapping = {
+        "Ar2+": "Ar++",
+        "Ar3+": "Ar+++",
+        "Ar4+": "Ar++++",
+    }
+    tokens = [tok for tok in species_list.split() if tok.strip()]
+    normalized = [mapping.get(tok, tok) for tok in tokens]
+    return " ".join(normalized)
+
+
+def _needs_argon_high_ion_patch(species_descriptor: str) -> bool:
+    tokens = set(species_descriptor.split())
+    return any(tok in tokens for tok in ("Ar++", "Ar+++", "Ar++++"))
+
+
+def _argon_high_ion_species_block(species_name: str, charge: int, hf_j_mol: float) -> str:
+    return (
+        f"\n\t<!-- Argon {charge}+ cation (custom runtime patch for tutorial overlay) -->\n"
+        f"\t<species name=\"{species_name}\">\n"
+        "\t\t<stoichiometry>\n"
+        "\t\t\tAr: 1,\n"
+        f"\t\t\te-: -{charge}\n"
+        "\t\t</stoichiometry>\n"
+        "\t\t<thermodynamics type=\"RRHO\">\n"
+        "\t\t\t<electronic_levels units=\"1/cm\">\n"
+        "\t\t\t\t<level degeneracy=\"1\" energy=\"0.0\" />\n"
+        "\t\t\t</electronic_levels>\n"
+        "\t\t\t<formation_enthalpy T=\"298 K\" P=\"1 atm\" units=\"J/mol\">\n"
+        f"\t\t\t\t{hf_j_mol:.12f}\n"
+        "\t\t\t</formation_enthalpy>\n"
+        "\t\t</thermodynamics>\n"
+        "\t</species>\n"
+    )
+
+
+def _ensure_argon_high_ions_in_species_xml(
+    species_xml: Path, eion_by_species_eV: dict[str, float]
+) -> None:
+    txt = species_xml.read_text(encoding="utf-8")
+    required = [
+        ("Ar++", 2, "Ar2+"),
+        ("Ar+++", 3, "Ar3+"),
+        ("Ar++++", 4, "Ar4+"),
+    ]
+    missing_blocks: list[str] = []
+    for mpp_name, charge, phase_name in required:
+        if f'<species name="{mpp_name}">' in txt:
+            continue
+        eion_eV = float(eion_by_species_eV.get(phase_name, 0.0))
+        hf_j_mol = eion_eV * EV_TO_J * AVOGADRO
+        missing_blocks.append(
+            _argon_high_ion_species_block(
+                species_name=mpp_name, charge=charge, hf_j_mol=hf_j_mol
+            )
+        )
+
+    if not missing_blocks:
+        return
+    if "</specieslist>" not in txt:
+        raise ValueError(f"Cannot patch species XML (missing </specieslist>): {species_xml}")
+    patched = txt.replace("</specieslist>", "".join(missing_blocks) + "\n</specieslist>")
+    species_xml.write_text(patched, encoding="utf-8")
+
+
+def _ensure_argon_polarizability_in_collisions_xml(collisions_xml: Path) -> None:
+    txt = collisions_xml.read_text(encoding="utf-8")
+    start = txt.find("<dipole-polarizabilities")
+    end = txt.find("</dipole-polarizabilities>")
+    if start < 0 or end < 0 or end <= start:
+        raise ValueError(
+            f"Cannot patch collisions XML dipole section: {collisions_xml}"
+        )
+    block = txt[start:end]
+    if 'name="Ar"' in block:
+        return
+    insertion = '        <species name="Ar"     value="1.6411" ref="tutorial custom"/>\n'
+    patched = txt[:end] + insertion + txt[end:]
+    collisions_xml.write_text(patched, encoding="utf-8")
+
+
+def prepare_mutationpp_data_dir_for_argon_high_ions(
+    base_data_dir: Path, eion_by_species_eV: dict[str, float]
+) -> Path:
+    tmp_root = Path(tempfile.mkdtemp(prefix="mpp_ar_highions_"))
+    for child in base_data_dir.iterdir():
+        target = tmp_root / child.name
+        if child.name in {"thermo", "transport"}:
+            shutil.copytree(child, target)
+        else:
+            target.symlink_to(child)
+
+    species_xml = tmp_root / "thermo" / "species.xml"
+    collisions_xml = tmp_root / "transport" / "collisions.xml"
+    if not species_xml.exists() or not collisions_xml.exists():
+        raise FileNotFoundError(
+            "Patched Mutationpp data directory is missing required thermo/transport files."
+        )
+    _ensure_argon_high_ions_in_species_xml(species_xml, eion_by_species_eV)
+    _ensure_argon_polarizability_in_collisions_xml(collisions_xml)
+    return tmp_root
+
+
 def _mutationpp_env(data_dir: Path, lib_dir: Path) -> dict[str, str]:
     env = dict(os.environ)
     env["MPP_DATA_DIRECTORY"] = str(data_dir)
@@ -618,6 +727,7 @@ def load_mutationpp_reference_rows(
     lib_dir: Path,
     species_list: str,
     elem_x: str,
+    eion_by_species_eV: dict[str, float],
 ) -> list[dict[str, float]]:
     if not mppequil_bin.exists():
         raise FileNotFoundError(f"Mutationpp mppequil not found: {mppequil_bin}")
@@ -631,65 +741,32 @@ def load_mutationpp_reference_rows(
     rows: list[dict[str, float]] = []
     t_sorted = sorted(float(t) for t in temperatures_k)
     uniform, step = _is_uniform_grid(t_sorted)
-    env = _mutationpp_env(data_dir=data_dir, lib_dir=lib_dir)
 
-    for p_atm in pressures_atm:
-        p_pa = float(p_atm) * 101325.0
-        if uniform and len(t_sorted) > 1:
-            t_spec = f"{t_sorted[0]:.16g}:{step:.16g}:{t_sorted[-1]:.16g}"
-            cmd = [
-                str(mppequil_bin),
-                "--no-header",
-                "--species-list",
-                species_list,
-                "--elem-x",
-                elem_x,
-                "-T",
-                t_spec,
-                "-P",
-                f"{p_pa:.16g}",
-                "-m",
-                "0,1,3,9,10,32,33,40",
-            ]
-            proc = subprocess.run(
-                cmd,
-                check=True,
-                capture_output=True,
-                text=True,
-                env=env,
-            )
-            for line in proc.stdout.splitlines():
-                text = line.strip()
-                if not text:
-                    continue
-                vals = text.split()
-                if len(vals) < 8:
-                    raise ValueError(
-                        f"Unexpected mppequil output row (expected >=8 values): {text}"
-                    )
-                rows.append(
-                    {
-                        "T_K": float(vals[0]),
-                        "P_atm": float(p_atm),
-                        "mpp_rho_kg_m3": float(vals[2]),
-                        "mpp_cp_J_kgK": float(vals[3]),
-                        "mpp_h_J_kg": float(vals[4]),
-                        "mpp_mu_Pa_s": float(vals[5]),
-                        "mpp_kappa_W_mK": float(vals[6]),
-                        "mpp_sigma_S_m": float(vals[7]),
-                    }
-                )
-        else:
-            for t in t_sorted:
+    species_descriptor = normalize_mutationpp_species_descriptor(species_list)
+    effective_data_dir = data_dir
+    patched_dir: Path | None = None
+    if _needs_argon_high_ion_patch(species_descriptor):
+        patched_dir = prepare_mutationpp_data_dir_for_argon_high_ions(
+            base_data_dir=data_dir, eion_by_species_eV=eion_by_species_eV
+        )
+        effective_data_dir = patched_dir
+
+    env = _mutationpp_env(data_dir=effective_data_dir, lib_dir=lib_dir)
+
+    try:
+        for p_atm in pressures_atm:
+            p_pa = float(p_atm) * 101325.0
+            if uniform and len(t_sorted) > 1:
+                t_spec = f"{t_sorted[0]:.16g}:{step:.16g}:{t_sorted[-1]:.16g}"
                 cmd = [
                     str(mppequil_bin),
                     "--no-header",
                     "--species-list",
-                    species_list,
+                    species_descriptor,
                     "--elem-x",
                     elem_x,
                     "-T",
-                    f"{t:.16g}",
+                    t_spec,
                     "-P",
                     f"{p_pa:.16g}",
                     "-m",
@@ -702,14 +779,15 @@ def load_mutationpp_reference_rows(
                     text=True,
                     env=env,
                 )
-                parsed = False
                 for line in proc.stdout.splitlines():
                     text = line.strip()
                     if not text:
                         continue
                     vals = text.split()
                     if len(vals) < 8:
-                        continue
+                        raise ValueError(
+                            f"Unexpected mppequil output row (expected >=8 values): {text}"
+                        )
                     rows.append(
                         {
                             "T_K": float(vals[0]),
@@ -722,10 +800,58 @@ def load_mutationpp_reference_rows(
                             "mpp_sigma_S_m": float(vals[7]),
                         }
                     )
-                    parsed = True
-                    break
-                if not parsed:
-                    raise ValueError(f"No numeric row returned by mppequil for T={t}, P={p_pa} Pa")
+            else:
+                for t in t_sorted:
+                    cmd = [
+                        str(mppequil_bin),
+                        "--no-header",
+                        "--species-list",
+                        species_descriptor,
+                        "--elem-x",
+                        elem_x,
+                        "-T",
+                        f"{t:.16g}",
+                        "-P",
+                        f"{p_pa:.16g}",
+                        "-m",
+                        "0,1,3,9,10,32,33,40",
+                    ]
+                    proc = subprocess.run(
+                        cmd,
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                        env=env,
+                    )
+                    parsed = False
+                    for line in proc.stdout.splitlines():
+                        text = line.strip()
+                        if not text:
+                            continue
+                        vals = text.split()
+                        if len(vals) < 8:
+                            continue
+                        rows.append(
+                            {
+                                "T_K": float(vals[0]),
+                                "P_atm": float(p_atm),
+                                "mpp_rho_kg_m3": float(vals[2]),
+                                "mpp_cp_J_kgK": float(vals[3]),
+                                "mpp_h_J_kg": float(vals[4]),
+                                "mpp_mu_Pa_s": float(vals[5]),
+                                "mpp_kappa_W_mK": float(vals[6]),
+                                "mpp_sigma_S_m": float(vals[7]),
+                            }
+                        )
+                        parsed = True
+                        break
+                    if not parsed:
+                        raise ValueError(
+                            f"No numeric row returned by mppequil for T={t}, P={p_pa} Pa"
+                        )
+    finally:
+        if patched_dir is not None and patched_dir.exists():
+            shutil.rmtree(patched_dir, ignore_errors=True)
 
     rows.sort(key=lambda r: (r["P_atm"], r["T_K"]))
     expected = len(t_sorted) * len(pressures_atm)
@@ -1012,6 +1138,7 @@ def main() -> None:
                 lib_dir=args.mutationpp_lib_dir.resolve(),
                 species_list=args.mutationpp_species_list,
                 elem_x=args.mutationpp_elem_x,
+                eion_by_species_eV=eion_by_species_eV,
             )
             mutationpp_reference_csv = default_mutationpp_csv
             write_mutationpp_reference_csv(mutationpp_reference_csv, mutationpp_rows)
@@ -1038,6 +1165,9 @@ def main() -> None:
             "mutationpp_data_dir": str(args.mutationpp_data_dir.resolve()),
             "mutationpp_lib_dir": str(args.mutationpp_lib_dir.resolve()),
             "mutationpp_species_list": args.mutationpp_species_list,
+            "mutationpp_species_list_normalized": normalize_mutationpp_species_descriptor(
+                args.mutationpp_species_list
+            ),
             "mutationpp_elem_x": args.mutationpp_elem_x,
         },
         "species_order": SPECIES,
@@ -1081,6 +1211,9 @@ def main() -> None:
         "mutationpp_overlay": {
             "enabled": not args.skip_mutationpp_overlay,
             "reference_generated": mutationpp_reference_csv is not None,
+            "argon_high_ions_requested": _needs_argon_high_ion_patch(
+                normalize_mutationpp_species_descriptor(args.mutationpp_species_list)
+            ),
             "error": mutationpp_reference_error,
         },
         "dlnQdT_sample": {

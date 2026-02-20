@@ -296,7 +296,7 @@ def parse_args() -> argparse.Namespace:
         default="auto",
         help=(
             "Reaction-conductivity closure: "
-            "auto=(legacy_composite in default mode, butler_mole in --murphy-strict), "
+            "auto=(legacy_composite recommended default), "
             "legacy_composite=(mass-gradient + cp amplification), "
             "butler_mass=(mass-gradient only), "
             "butler_mole=(mole-gradient only), "
@@ -308,7 +308,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help=(
             "Apply stricter Murphy-style transport closure defaults. "
-            "With --k-reac-model=auto, uses Butler mole-gradient closure."
+            "With --k-reac-model=auto, uses legacy composite closure."
         ),
     )
     return parser.parse_args()
@@ -316,7 +316,7 @@ def parse_args() -> argparse.Namespace:
 
 def apply_murphy_profile(args: argparse.Namespace) -> None:
     if args.k_reac_model == "auto":
-        args.k_reac_model = "butler_mole" if args.murphy_strict else "legacy_composite"
+        args.k_reac_model = "legacy_composite"
     # Allow explicit k-reac override even in strict mode.
     if not args.murphy_strict:
         return
