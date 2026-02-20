@@ -1,0 +1,47 @@
+{
+  "inputs": {
+    "raw_dir": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/argon",
+    "equilibrium_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/equilibrium/argon_lte_equilibrium_0p1_1_4atm.csv",
+    "source_files": {
+      "aziz1990": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/argon/aziz1990_hfdtcs2_constants.csv",
+      "aubreton1986": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/argon/aubreton1986_ar_arplus_elastic_potentials.csv",
+      "milloy1977": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/argon/milloy1977_e_ar_momentum_transfer_table1.csv",
+      "frost1964_digitized": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/argon/frost1964_e_ar_high_energy_digitized.csv",
+      "mason1967_tableI": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/argon/mason1967_tableI_t2omega.csv",
+      "mason1967_tableII": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/argon/mason1967_tableII_abc.csv"
+    }
+  },
+  "temperature_grid": {
+    "t_min": 300.0,
+    "t_max": 30000.0,
+    "t_step": 200.0,
+    "n_points": 150
+  },
+  "pressures_atm_for_charged": [
+    0.1,
+    1.0,
+    4.0
+  ],
+  "charged_model_limits": {
+    "min_ne_m3": 100000000000000.0,
+    "max_debye_length_m": 0.001
+  },
+  "models": {
+    "Ar-Ar": "LJ surrogate with Aziz epsilon/k and sigma",
+    "Ar-Ar+": "Qex model (MurphyTam2014) + Langevin elastic capture model",
+    "e-Ar": "Maxwellian average of Qm(E), Milloy table + Frost high-energy extension",
+    "charged-charged": "Mason1967 reduced tables + Debye length (electron-only)"
+  },
+  "outputs": {
+    "non_charged_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport/argon_collision_integrals_non_charged.csv",
+    "charged_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport/argon_collision_integrals_charged_by_pressure.csv",
+    "all_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport/argon_collision_integrals_all.csv",
+    "mutationpp_snippet_xml": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport/mutationpp_argon_collision_pairs.xml"
+  },
+  "notes": [
+    "Ar-Ar full HFDTCS2 classical scattering integration is planned; current version uses a documented LJ-style surrogate.",
+    "Frost1964 high-energy e-Ar points are figure-digitized approximations.",
+    "Charged-charged table uses electron density from phase-2 equilibrium CSV and is pressure-dependent.",
+    "Debye length is capped and ne is floored for low-ionization stability in screened-Coulomb mode."
+  ]
+}

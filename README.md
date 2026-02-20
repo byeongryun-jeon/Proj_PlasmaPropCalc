@@ -74,3 +74,18 @@ Proj_PlasmaPropCalc/
 1. 케이스별 입력 템플릿(`input.yaml`) 6개
 2. 공통 물성치 출력 포맷(`results/tables/schema.md`)
 3. 자동 실행 스크립트 골격(`scripts/run_all.sh`)
+
+## Phase 4 실행 (충돌적분/수송 입력)
+
+```bash
+cd /home/brjeon/Proj_PlasmaPropCalc
+python3 scripts/murphy/build_collision_integrals.py
+```
+
+출력:
+
+- `data/processed/transport/argon_collision_integrals_non_charged.csv`
+- `data/processed/transport/argon_collision_integrals_charged_by_pressure.csv`
+- `data/processed/transport/argon_collision_integrals_all.csv`
+- `data/processed/transport/mutationpp_argon_collision_pairs.xml`
+- `data/processed/transport/argon_collision_integrals_metadata.json`
