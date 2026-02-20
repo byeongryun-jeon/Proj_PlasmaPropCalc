@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import importlib.util
 import json
 import math
 import mimetypes
@@ -30,6 +31,7 @@ KB_EV_PER_K = 8.617333262e-5
 EV_TO_J = 1.602176634e-19
 MASS_AR = 6.6335209e-26
 MASS_E = 9.1093837e-31
+ATM_TO_BAR = 1.01325
 
 SPECIES = ["Ar", "Ar+", "Ar2+", "Ar3+", "Ar4+", "e-"]
 EQ_COL_TO_SPECIES = {
@@ -71,6 +73,35 @@ def parse_args() -> argparse.Namespace:
         "--skip-plots",
         action="store_true",
         help="Skip gnuplot figure generation.",
+    )
+    parser.add_argument(
+        "--skip-matf-overlay",
+        action="store_true",
+        help="Disable MATF reference generation/overlay in thermo plots.",
+    )
+    parser.add_argument(
+        "--matf-script",
+        type=Path,
+        default=Path("/home/brjeon/matfLookUpPython/matf_lookup.py"),
+        help="Path to matf_lookup.py (MatfLookupSimplex implementation).",
+    )
+    parser.add_argument(
+        "--matf-table",
+        type=Path,
+        default=Path("/home/brjeon/matfLookUpPython/output_He_H2_Ar.dat"),
+        help="Path to MATF lookup table (output_He_H2_Ar.dat).",
+    )
+    parser.add_argument(
+        "--matf-massf1",
+        type=float,
+        default=0.0,
+        help="MATF mass fraction 1 (He).",
+    )
+    parser.add_argument(
+        "--matf-massf2",
+        type=float,
+        default=0.0,
+        help="MATF mass fraction 2 (H2).",
     )
     parser.add_argument(
         "--upload-to-gdrive",
@@ -456,7 +487,79 @@ def ensure_drive_subfolder(
         raise
 
 
-def generate_gnuplot_figures(combined_csv: Path, plots_dir: Path, pressures: list[float]) -> None:
+def load_matf_reference_rows(
+    temperatures_k: list[float],
+    pressures_atm: list[float],
+    matf_script: Path,
+    matf_table: Path,
+    massf1: float,
+    massf2: float,
+) -> list[dict[str, float]]:
+    if not matf_script.exists():
+        raise FileNotFoundError(f"MATF script not found: {matf_script}")
+    if not matf_table.exists():
+        raise FileNotFoundError(f"MATF table not found: {matf_table}")
+
+    spec = importlib.util.spec_from_file_location("matf_lookup_ext", str(matf_script))
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to import MATF script: {matf_script}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    lookup_cls = getattr(module, "MatfLookupSimplex", None)
+    if lookup_cls is None:
+        raise AttributeError("MatfLookupSimplex class not found in MATF script.")
+
+    lookup = lookup_cls(str(matf_table), convert_to_SI=True)
+    rows: list[dict[str, float]] = []
+    for p_atm in pressures_atm:
+        p_bar = p_atm * ATM_TO_BAR
+        for t in temperatures_k:
+            rec = lookup.sample_all(float(t), float(p_bar), float(massf1), float(massf2))
+            rows.append(
+                {
+                    "T_K": float(t),
+                    "P_atm": float(p_atm),
+                    "P_bar": float(rec["P_bar"]),
+                    "massf1": float(rec["massf1"]),
+                    "massf2": float(rec["massf2"]),
+                    "matf_rho_kg_m3": float(rec["rho"]),
+                    "matf_h_J_kg": float(rec["enthalpy"]),
+                    "matf_cp_J_kgK": float(rec["heat_capacity"]),
+                    "matf_mu_Pa_s": float(rec["viscosity"]),
+                    "matf_kappa_W_mK": float(rec["kappa"]),
+                    "matf_sigma_S_m": float(rec["sigmaLTE"]),
+                }
+            )
+    rows.sort(key=lambda r: (r["P_atm"], r["T_K"]))
+    return rows
+
+
+def write_matf_reference_csv(path: Path, rows: list[dict[str, float]]) -> None:
+    if not rows:
+        raise ValueError("No MATF rows to write.")
+    fields = [
+        "T_K",
+        "P_atm",
+        "P_bar",
+        "massf1",
+        "massf2",
+        "matf_rho_kg_m3",
+        "matf_h_J_kg",
+        "matf_cp_J_kgK",
+        "matf_mu_Pa_s",
+        "matf_kappa_W_mK",
+        "matf_sigma_S_m",
+    ]
+    with path.open("w", encoding="utf-8", newline="") as fp:
+        writer = csv.DictWriter(fp, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def generate_gnuplot_figures(
+    combined_csv: Path, plots_dir: Path, pressures: list[float], matf_csv: Path | None
+) -> None:
     plots_dir.mkdir(parents=True, exist_ok=True)
 
     p1, p2, p3 = pressures
@@ -466,20 +569,21 @@ def generate_gnuplot_figures(combined_csv: Path, plots_dir: Path, pressures: lis
         (p3, "#2ca02c", "4 atm" if abs(p3 - 4.0) < 1e-12 else f"{p3:g} atm"),
     ]
 
-    scripts: list[tuple[str, int, str, str, Path]] = [
-        ("rho_vs_T.gnuplot", 3, "Density", "rho [kg/m^3]", plots_dir / "rho_vs_T.png"),
-        ("h_vs_T.gnuplot", 4, "Specific Enthalpy", "h [J/kg]", plots_dir / "h_vs_T.png"),
-        ("cp_vs_T.gnuplot", 5, "Specific Heat at Constant Pressure", "Cp [J/(kg K)]", plots_dir / "cp_vs_T.png"),
+    scripts: list[tuple[str, int, int, str, str, Path]] = [
+        ("rho_vs_T.gnuplot", 3, 6, "Density", "rho [kg/m^3]", plots_dir / "rho_vs_T.png"),
+        ("h_vs_T.gnuplot", 4, 7, "Specific Enthalpy", "h [J/kg]", plots_dir / "h_vs_T.png"),
+        ("cp_vs_T.gnuplot", 5, 8, "Specific Heat at Constant Pressure", "Cp [J/(kg K)]", plots_dir / "cp_vs_T.png"),
         (
             "cp_vs_T_0_30000K.gnuplot",
             5,
+            8,
             "Specific Heat at Constant Pressure (0-30000 K)",
             "Cp [J/(kg K)]",
             plots_dir / "cp_vs_T_0_30000K.png",
         ),
     ]
 
-    for script_name, col, title, ylabel, png_path in scripts:
+    for script_name, col, matf_col, title, ylabel, png_path in scripts:
         x_range_line = ""
         if "0_30000" in script_name:
             x_range_line = "set xrange [0:30000]\n"
@@ -489,9 +593,20 @@ def generate_gnuplot_figures(combined_csv: Path, plots_dir: Path, pressures: lis
             plot_lines.append(
                 (
                     f"'{combined_csv}' u 1:(abs($2-{p:.16g})<1e-12 ? ${col} : 1/0) "
-                    f"w l lw 2 lc rgb '{color}' title '{label}'"
+                    f"w l lw 2 lc rgb '{color}' title 'This work {label}'"
                 )
             )
+            if matf_csv is not None and matf_csv.exists():
+                plot_lines.append(
+                    (
+                        f"'{matf_csv}' u 1:(abs($2-{p:.16g})<1e-12 ? ${matf_col} : 1/0) "
+                        f"w l lw 2 dt 2 lc rgb '{color}' title 'MATF {label}'"
+                    )
+                )
+
+        y_axis_extras = ""
+        if script_name == "rho_vs_T.gnuplot":
+            y_axis_extras = "set logscale y\n"
 
         script_text = (
             "set datafile separator ','\n"
@@ -503,6 +618,7 @@ def generate_gnuplot_figures(combined_csv: Path, plots_dir: Path, pressures: lis
             f"set ylabel '{ylabel}'\n"
             f"set title '{title}'\n"
             f"{x_range_line}"
+            f"{y_axis_extras}"
             "set format y '%.3e'\n"
             "plot \\\n"
             + ", \\\n".join(plot_lines)
@@ -623,10 +739,40 @@ def main() -> None:
     legacy_cp_peak_csv = output_dir / "argon_cp_peaks_10000_20000K.csv"
     shutil.copyfile(cp_peak_csv, legacy_cp_peak_csv)
 
+    matf_reference_csv: Path | None = None
+    matf_reference_error: str | None = None
+    if not args.skip_matf_overlay:
+        default_matf_csv = output_dir / "argon_matf_reference_0p1_1_4atm.csv"
+        try:
+            matf_rows = load_matf_reference_rows(
+                temperatures_k=temperatures_eq,
+                pressures_atm=pressures,
+                matf_script=args.matf_script.resolve(),
+                matf_table=args.matf_table.resolve(),
+                massf1=args.matf_massf1,
+                massf2=args.matf_massf2,
+            )
+            matf_reference_csv = output_dir / "argon_matf_reference_0p1_1_4atm.csv"
+            write_matf_reference_csv(matf_reference_csv, matf_rows)
+        except Exception as exc:
+            matf_reference_error = str(exc)
+            if default_matf_csv.exists():
+                matf_reference_csv = default_matf_csv
+                print(
+                    f"[WARN] MATF reference regeneration failed ({exc}); "
+                    f"using existing file: {default_matf_csv}"
+                )
+            else:
+                print(f"[WARN] MATF reference generation skipped: {exc}")
+
     metadata = {
         "inputs": {
             "partition_json": str(args.partition_json.resolve()),
             "equilibrium_csv": str(args.equilibrium_csv.resolve()),
+            "matf_script": str(args.matf_script.resolve()),
+            "matf_table": str(args.matf_table.resolve()),
+            "matf_massf1": args.matf_massf1,
+            "matf_massf2": args.matf_massf2,
         },
         "species_order": SPECIES,
         "pressures_atm": pressures,
@@ -656,6 +802,12 @@ def main() -> None:
                 for p in pressures
             ],
             "plots_dir": str(plots_dir),
+            "matf_reference_csv": str(matf_reference_csv) if matf_reference_csv is not None else "",
+        },
+        "matf_overlay": {
+            "enabled": not args.skip_matf_overlay,
+            "reference_generated": matf_reference_csv is not None,
+            "error": matf_reference_error,
         },
         "dlnQdT_sample": {
             "Ar_at_300K": dlnq_dt_pf["Ar"][0],
@@ -671,7 +823,10 @@ def main() -> None:
     if not args.skip_plots:
         try:
             generate_gnuplot_figures(
-                combined_csv=combined_csv, plots_dir=plots_dir, pressures=pressures
+                combined_csv=combined_csv,
+                plots_dir=plots_dir,
+                pressures=pressures,
+                matf_csv=matf_reference_csv,
             )
             # Backward-compatible aliases for previously shared plot names.
             legacy_plot_map = {
@@ -712,6 +867,8 @@ def main() -> None:
             cp_peak_csv,
             *[output_dir / f"argon_thermo_{pressure_tag(p)}atm.csv" for p in pressures],
         ]
+        if matf_reference_csv is not None and matf_reference_csv.exists():
+            upload_paths.append(matf_reference_csv)
         if not args.skip_plots:
             upload_paths.extend(sorted(plots_dir.glob("*.png")))
 
@@ -742,6 +899,8 @@ def main() -> None:
     for p in pressures:
         print(f"[OK] Wrote: {output_dir / f'argon_thermo_{pressure_tag(p)}atm.csv'}")
     print(f"[OK] Wrote: {cp_peak_csv}")
+    if matf_reference_csv is not None:
+        print(f"[OK] Wrote: {matf_reference_csv}")
     print(f"[OK] Wrote: {metadata_path}")
     if not args.skip_plots:
         print(f"[OK] Wrote plots in: {plots_dir}")

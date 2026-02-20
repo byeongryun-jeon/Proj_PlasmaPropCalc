@@ -736,10 +736,10 @@ def main() -> None:
         q_el_22 = thermal_average_q(
             t, lambda e: q_ar_arp_elastic_langevin_a2(e, charge_state=1), moment_power=2
         )
-        q11_a2 = math.sqrt(q_in_11 * q_in_11 + q_el_11 * q_el_11)
-        q22_a2 = math.sqrt(q_in_22 * q_in_22 + q_el_22 * q_el_22)
-        q11_m2 = q11_a2 * ANG2_TO_M2
-        q22_m2 = q22_a2 * ANG2_TO_M2
+        q11_ar_arp_a2 = math.sqrt(q_in_11 * q_in_11 + q_el_11 * q_el_11)
+        q22_ar_arp_a2 = math.sqrt(q_in_22 * q_in_22 + q_el_22 * q_el_22)
+        q11_m2 = q11_ar_arp_a2 * ANG2_TO_M2
+        q22_m2 = q22_ar_arp_a2 * ANG2_TO_M2
         ast = q22_m2 / max(q11_m2, 1.0e-300)
         non_charged_rows.append(
             {
@@ -748,8 +748,8 @@ def main() -> None:
                 "category": "ion-neutral",
                 "Q11_m2": q11_m2,
                 "Q22_m2": q22_m2,
-                "Q11_A2": q11_a2,
-                "Q22_A2": q22_a2,
+                "Q11_A2": q11_ar_arp_a2,
+                "Q22_A2": q22_ar_arp_a2,
                 "Ast": ast,
                 "Bst": 1.20,
                 "Cst": 0.85,
@@ -757,6 +757,33 @@ def main() -> None:
                 "notes": "Uses Aubreton1986 context; elastic represented with capture model",
             }
         )
+
+        # Ar-Ar(z+) for z=2,3,4:
+        # keep explicit rows in the collision table using the same scaling
+        # convention previously applied as runtime fallback in Phase 5.
+        for z in (2, 3, 4):
+            scale_z = math.sqrt(float(z))
+            q11_z_a2 = q11_ar_arp_a2 * scale_z
+            q22_z_a2 = q22_ar_arp_a2 * scale_z
+            q11_z_m2 = q11_z_a2 * ANG2_TO_M2
+            q22_z_m2 = q22_z_a2 * ANG2_TO_M2
+            ast_z = q22_z_m2 / max(q11_z_m2, 1.0e-300)
+            non_charged_rows.append(
+                {
+                    "T_K": t,
+                    "pair": f"Ar-Ar{z}+",
+                    "category": "ion-neutral-derived",
+                    "Q11_m2": q11_z_m2,
+                    "Q22_m2": q22_z_m2,
+                    "Q11_A2": q11_z_a2,
+                    "Q22_A2": q22_z_a2,
+                    "Ast": ast_z,
+                    "Bst": 1.20,
+                    "Cst": 0.85,
+                    "source": "Scaled from Ar-Ar+",
+                    "notes": "Q11/Q22 scaled by sqrt(z) from Ar-Ar+ for higher ionization states",
+                }
+            )
 
         # e-Ar (electron-neutral)
         q11_a2 = thermal_average_q(t, q_e_ar, moment_power=1)
@@ -1043,8 +1070,9 @@ def main() -> None:
         "models": {
             "Ar-Ar": "LJ surrogate with Aziz epsilon/k and sigma",
             "Ar-Ar+": "Qex model (MurphyTam2014) + Langevin elastic capture model",
+            "Ar-Ar2+/Ar-Ar3+/Ar-Ar4+": "Derived from Ar-Ar+ via sqrt(z) scaling on Q11/Q22",
             "e-Ar": "Maxwellian average of Qm(E), Milloy table + Frost high-energy extension",
-            "charged-charged": "Mason1967 reduced tables + Debye-Huckel screening",
+            "charged-charged": "Mason1967 reduced tables + Debye-Huckel screening for pairs among e-, Ar+, Ar2+, Ar3+, Ar4+",
         },
         "outputs": {
             "non_charged_csv": str(non_charged_csv),

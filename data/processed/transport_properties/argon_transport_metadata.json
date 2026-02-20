@@ -3,7 +3,8 @@
     "equilibrium_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/equilibrium/argon_lte_equilibrium_0p1_1_4atm.csv",
     "thermo_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_thermo_0p1_1_4atm.csv",
     "collision_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport/argon_collision_integrals_all.csv",
-    "partition_json": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/partition_functions/partition_functions_Ar_system.json"
+    "partition_json": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/partition_functions/partition_functions_Ar_system.json",
+    "matf_reference_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_matf_reference_0p1_1_4atm.csv"
   },
   "collision_mapping": {
     "format": "long",
@@ -15,12 +16,8 @@
     "bst_column": "Bst",
     "cst_column": "Cst"
   },
-  "collision_rows_loaded": 7200,
-  "fallback_counts": {
-    "Ar-Ar2+:scaled_from_Ar-Ar+": 1350,
-    "Ar-Ar3+:scaled_from_Ar-Ar+": 1350,
-    "Ar-Ar4+:scaled_from_Ar-Ar+": 1350
-  },
+  "collision_rows_loaded": 7650,
+  "fallback_counts": {},
   "approximations": {
     "viscosity": "Devoto 1st-order Chapman-Enskog heavy-species coefficient matrix",
     "kappa_H": "Devoto/Muckenfuss-Curtiss 2nd-order heavy-species coefficient matrix",
@@ -80,6 +77,7 @@
       "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport_properties/argon_transport_4atm.csv"
     ],
     "sensitivity_report_json": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport_properties/argon_transport_sensitivity_report.json",
-    "plots_dir": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport_properties/plots"
+    "plots_dir": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport_properties/plots",
+    "matf_overlay_used": true
   }
 }

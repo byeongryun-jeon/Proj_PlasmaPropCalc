@@ -248,6 +248,15 @@ Q_{11}=\sqrt{Q_{11,\mathrm{in}}^2+Q_{11,\mathrm{el}}^2},\qquad
 Q_{22}=\sqrt{Q_{22,\mathrm{in}}^2+Q_{22,\mathrm{el}}^2}
 $$
 
+고이온종 중성-이온 쌍은 코드에서 명시적으로 생성한다:
+
+$$
+Q_{11,\mathrm{Ar-Ar}^{z+}}=\sqrt{z}\,Q_{11,\mathrm{Ar-Ar}^+},\qquad
+Q_{22,\mathrm{Ar-Ar}^{z+}}=\sqrt{z}\,Q_{22,\mathrm{Ar-Ar}^+},\quad z=2,3,4
+$$
+
+즉, `Ar-Ar2+`, `Ar-Ar3+`, `Ar-Ar4+` 행이 `argon_collision_integrals_non_charged.csv`에 포함된다.
+
 ### 6.3 e-Ar (electron-neutral)
 
 에너지 단면적 \(Q_m(E)\)를 Milloy+Frost 데이터로 구성하고, 코드에서 다음 가중 평균을 사용:
@@ -308,6 +317,15 @@ Q_{ls} = S_{\mathrm{coul}}\cdot\left[(T^\*)^2Q_{ls}\right]_{\mathrm{table}}
 $$
 
 \(S_{\mathrm{coul}}\)은 `--coulomb-lnlambda-scale`.
+
+이 블록은 다음 charged species 집합의 모든 쌍(\(i\le j\))에 대해 계산된다:
+
+$$
+\{e^-,\mathrm{Ar}^+,\mathrm{Ar}^{2+},\mathrm{Ar}^{3+},\mathrm{Ar}^{4+}\}
+$$
+
+따라서 `e--Ar2+`, `Ar+-Ar3+`, `Ar2+-Ar4+`, `Ar4+-Ar4+` 등의 충돌적분이
+압력별(`P_atm`)로 명시 저장된다.
 
 출력 파일:
 
@@ -522,6 +540,10 @@ $$
 - `data/processed/transport_properties/argon_transport_metadata.json`
 
 ## 8. 결과 그래프 (GitHub 렌더링)
+
+아래 요약 그래프(`rho`, `h`, `Cp`, `mu`, `kappa`, `sigma`)는
+실선(`This work`)과 점선(`MATF`)을 함께 표시한다.
+`kappa components` 그래프는 요청대로 MATF 점선을 추가하지 않는다.
 
 ### 8.1 Thermodynamic
 

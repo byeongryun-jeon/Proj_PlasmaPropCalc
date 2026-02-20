@@ -261,6 +261,12 @@ def parse_args() -> argparse.Namespace:
         help="Skip gnuplot figure generation.",
     )
     parser.add_argument(
+        "--matf-reference-csv",
+        type=Path,
+        default=root / "data" / "processed" / "thermo" / "argon_matf_reference_0p1_1_4atm.csv",
+        help="Optional MATF reference CSV for dashed overlay on summary plots.",
+    )
+    parser.add_argument(
         "--reaction-scale",
         type=float,
         default=1.0,
@@ -1338,7 +1344,9 @@ def pressure_tag(p_atm: float) -> str:
     return f"{p_atm:g}".replace("-", "m").replace(".", "p")
 
 
-def generate_plots(combined_csv: Path, plots_dir: Path, pressures: list[float]) -> None:
+def generate_plots(
+    combined_csv: Path, plots_dir: Path, pressures: list[float], matf_csv: Path | None
+) -> None:
     plots_dir.mkdir(parents=True, exist_ok=True)
     pressure_terms = []
     colors = ["#1f77b4", "#d62728", "#2ca02c"]
@@ -1354,17 +1362,37 @@ def generate_plots(combined_csv: Path, plots_dir: Path, pressures: list[float]) 
         pressure_terms.append((p, colors[idx % len(colors)], label))
 
     summary_scripts = [
-        ("mu_vs_T.gnuplot", 3, "Viscosity", "mu [Pa s]", plots_dir / "mu_vs_T.png"),
-        ("kappa_vs_T.gnuplot", 4, "Thermal Conductivity", "kappa [W/(m K)]", plots_dir / "kappa_vs_T.png"),
-        ("sigma_vs_T.gnuplot", 9, "Electrical Conductivity", "sigma [S/m]", plots_dir / "sigma_vs_T.png"),
+        ("mu_vs_T.gnuplot", 3, 9, "Viscosity", "mu [Pa s]", plots_dir / "mu_vs_T.png"),
+        (
+            "kappa_vs_T.gnuplot",
+            4,
+            10,
+            "Thermal Conductivity",
+            "kappa [W/(m K)]",
+            plots_dir / "kappa_vs_T.png",
+        ),
+        (
+            "sigma_vs_T.gnuplot",
+            9,
+            11,
+            "Electrical Conductivity",
+            "sigma [S/m]",
+            plots_dir / "sigma_vs_T.png",
+        ),
     ]
 
-    for script_name, col, title, ylabel, png_path in summary_scripts:
+    for script_name, col, matf_col, title, ylabel, png_path in summary_scripts:
         lines = []
         for p, color, label in pressure_terms:
             lines.append(
-                f"'{combined_csv}' u 1:(abs($2-{p:.16g})<1e-12 ? ${col} : 1/0) w l lw 2 lc rgb '{color}' title '{label}'"
+                f"'{combined_csv}' u 1:(abs($2-{p:.16g})<1e-12 ? ${col} : 1/0) "
+                f"w l lw 2 lc rgb '{color}' title 'This work {label}'"
             )
+            if matf_csv is not None and matf_csv.exists():
+                lines.append(
+                    f"'{matf_csv}' u 1:(abs($2-{p:.16g})<1e-12 ? ${matf_col} : 1/0) "
+                    f"w l lw 2 dt 2 lc rgb '{color}' title 'MATF {label}'"
+                )
         script = (
             "set datafile separator ','\n"
             "set terminal pngcairo size 1400,900 enhanced\n"
@@ -1490,6 +1518,11 @@ def main() -> None:
         per_csv = output_dir / f"argon_transport_{ptag}atm.csv"
         write_csv(per_csv, per_pressure[p], fields)
 
+    matf_reference_csv = args.matf_reference_csv.resolve()
+    if not matf_reference_csv.exists():
+        print(f"[WARN] MATF reference CSV not found: {matf_reference_csv}")
+        matf_reference_csv = None
+
     sensitivity_report: dict[str, object] = {}
     for p in pressures:
         key = f"{p:g} atm"
@@ -1544,6 +1577,11 @@ def main() -> None:
             "thermo_csv": str(args.thermo_csv.resolve()),
             "collision_csv": str(args.collision_csv.resolve()),
             "partition_json": str(args.partition_json.resolve()),
+            "matf_reference_csv": (
+                str(args.matf_reference_csv.resolve())
+                if args.matf_reference_csv is not None
+                else ""
+            ),
         },
         "collision_mapping": mapping,
         "collision_rows_loaded": len(records),
@@ -1575,6 +1613,7 @@ def main() -> None:
             ],
             "sensitivity_report_json": str(sensitivity_path),
             "plots_dir": str(plots_dir),
+            "matf_overlay_used": matf_reference_csv is not None,
         },
     }
     meta_path = output_dir / "argon_transport_metadata.json"
@@ -1582,7 +1621,12 @@ def main() -> None:
 
     if not args.skip_plots:
         try:
-            generate_plots(combined_csv=combined_csv, plots_dir=plots_dir, pressures=pressures)
+            generate_plots(
+                combined_csv=combined_csv,
+                plots_dir=plots_dir,
+                pressures=pressures,
+                matf_csv=matf_reference_csv,
+            )
         except FileNotFoundError:
             print("[WARN] gnuplot not found. Skipping plots.")
         except subprocess.CalledProcessError as exc:

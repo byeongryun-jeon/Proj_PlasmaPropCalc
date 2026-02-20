@@ -1,7 +1,11 @@
 {
   "inputs": {
     "partition_json": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/partition_functions/partition_functions_Ar_system.json",
-    "equilibrium_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/equilibrium/argon_lte_equilibrium_0p1_1_4atm.csv"
+    "equilibrium_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/equilibrium/argon_lte_equilibrium_0p1_1_4atm.csv",
+    "matf_script": "/home/brjeon/matfLookUpPython/matf_lookup.py",
+    "matf_table": "/home/brjeon/matfLookUpPython/output_He_H2_Ar.dat",
+    "matf_massf1": 0.0,
+    "matf_massf2": 0.0
   },
   "species_order": [
     "Ar",
@@ -65,7 +69,13 @@
       "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_thermo_1atm.csv",
       "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_thermo_4atm.csv"
     ],
-    "plots_dir": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/plots"
+    "plots_dir": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/plots",
+    "matf_reference_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_matf_reference_0p1_1_4atm.csv"
+  },
+  "matf_overlay": {
+    "enabled": true,
+    "reference_generated": true,
+    "error": "No module named 'numpy'"
   },
   "dlnQdT_sample": {
     "Ar_at_300K": 0.0,

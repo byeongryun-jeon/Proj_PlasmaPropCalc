@@ -34,14 +34,15 @@
   "models": {
     "Ar-Ar": "LJ surrogate with Aziz epsilon/k and sigma",
     "Ar-Ar+": "Qex model (MurphyTam2014) + Langevin elastic capture model",
+    "Ar-Ar2+/Ar-Ar3+/Ar-Ar4+": "Derived from Ar-Ar+ via sqrt(z) scaling on Q11/Q22",
     "e-Ar": "Maxwellian average of Qm(E), Milloy table + Frost high-energy extension",
-    "charged-charged": "Mason1967 reduced tables + Debye-Huckel screening"
+    "charged-charged": "Mason1967 reduced tables + Debye-Huckel screening for pairs among e-, Ar+, Ar2+, Ar3+, Ar4+"
   },
   "outputs": {
     "non_charged_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport/argon_collision_integrals_non_charged.csv",
     "charged_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport/argon_collision_integrals_charged_by_pressure.csv",
     "all_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport/argon_collision_integrals_all.csv",
-    "mutationpp_snippet_xml": ""
+    "mutationpp_snippet_xml": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport/mutationpp_argon_collision_pairs.xml"
   },
   "notes": [
     "Ar-Ar full HFDTCS2 classical scattering integration is planned; current version uses a documented LJ-style surrogate.",
