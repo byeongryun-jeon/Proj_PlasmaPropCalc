@@ -5,7 +5,12 @@
     "matf_script": "/home/brjeon/matfLookUpPython/matf_lookup.py",
     "matf_table": "/home/brjeon/matfLookUpPython/output_He_H2_Ar.dat",
     "matf_massf1": 0.0,
-    "matf_massf2": 0.0
+    "matf_massf2": 0.0,
+    "mutationpp_mppequil": "/home/brjeon/Mutationpp/install/bin/mppequil",
+    "mutationpp_data_dir": "/home/brjeon/Mutationpp/data",
+    "mutationpp_lib_dir": "/home/brjeon/Mutationpp/install/lib",
+    "mutationpp_species_list": "e- Ar Ar+",
+    "mutationpp_elem_x": "Ar:1.0"
   },
   "species_order": [
     "Ar",
@@ -70,12 +75,18 @@
       "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_thermo_4atm.csv"
     ],
     "plots_dir": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/plots",
-    "matf_reference_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_matf_reference_0p1_1_4atm.csv"
+    "matf_reference_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_matf_reference_0p1_1_4atm.csv",
+    "mutationpp_reference_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_mutationpp_reference_0p1_1_4atm.csv"
   },
   "matf_overlay": {
     "enabled": true,
     "reference_generated": true,
     "error": "No module named 'numpy'"
+  },
+  "mutationpp_overlay": {
+    "enabled": true,
+    "reference_generated": true,
+    "error": null
   },
   "dlnQdT_sample": {
     "Ar_at_300K": 0.0,

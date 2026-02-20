@@ -10,7 +10,10 @@ set format y '%.3e'
 plot \
 '/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_thermo_0p1_1_4atm.csv' u 1:(abs($2-0.1)<1e-12 ? $4 : 1/0) w l lw 2 lc rgb '#1f77b4' title 'This work 0.1 atm', \
 '/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_matf_reference_0p1_1_4atm.csv' u 1:(abs($2-0.1)<1e-12 ? $7 : 1/0) w l lw 2 dt 2 lc rgb '#1f77b4' title 'MATF 0.1 atm', \
+'/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_mutationpp_reference_0p1_1_4atm.csv' u 1:(abs($2-0.1)<1e-12 ? $4 : 1/0) w l lw 2 dt 3 lc rgb '#1f77b4' title 'Mutationpp 0.1 atm', \
 '/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_thermo_0p1_1_4atm.csv' u 1:(abs($2-1)<1e-12 ? $4 : 1/0) w l lw 2 lc rgb '#d62728' title 'This work 1 atm', \
 '/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_matf_reference_0p1_1_4atm.csv' u 1:(abs($2-1)<1e-12 ? $7 : 1/0) w l lw 2 dt 2 lc rgb '#d62728' title 'MATF 1 atm', \
+'/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_mutationpp_reference_0p1_1_4atm.csv' u 1:(abs($2-1)<1e-12 ? $4 : 1/0) w l lw 2 dt 3 lc rgb '#d62728' title 'Mutationpp 1 atm', \
 '/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_thermo_0p1_1_4atm.csv' u 1:(abs($2-4)<1e-12 ? $4 : 1/0) w l lw 2 lc rgb '#2ca02c' title 'This work 4 atm', \
-'/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_matf_reference_0p1_1_4atm.csv' u 1:(abs($2-4)<1e-12 ? $7 : 1/0) w l lw 2 dt 2 lc rgb '#2ca02c' title 'MATF 4 atm'
+'/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_matf_reference_0p1_1_4atm.csv' u 1:(abs($2-4)<1e-12 ? $7 : 1/0) w l lw 2 dt 2 lc rgb '#2ca02c' title 'MATF 4 atm', \
+'/home/brjeon/Proj_PlasmaPropCalc/data/processed/thermo/argon_mutationpp_reference_0p1_1_4atm.csv' u 1:(abs($2-4)<1e-12 ? $4 : 1/0) w l lw 2 dt 3 lc rgb '#2ca02c' title 'Mutationpp 4 atm'

@@ -267,6 +267,12 @@ def parse_args() -> argparse.Namespace:
         help="Optional MATF reference CSV for dashed overlay on summary plots.",
     )
     parser.add_argument(
+        "--mutationpp-reference-csv",
+        type=Path,
+        default=root / "data" / "processed" / "thermo" / "argon_mutationpp_reference_0p1_1_4atm.csv",
+        help="Optional Mutationpp reference CSV for dash-dot overlay on summary plots.",
+    )
+    parser.add_argument(
         "--reaction-scale",
         type=float,
         default=1.0,
@@ -1363,7 +1369,11 @@ def pressure_tag(p_atm: float) -> str:
 
 
 def generate_plots(
-    combined_csv: Path, plots_dir: Path, pressures: list[float], matf_csv: Path | None
+    combined_csv: Path,
+    plots_dir: Path,
+    pressures: list[float],
+    matf_csv: Path | None,
+    mutationpp_csv: Path | None,
 ) -> None:
     plots_dir.mkdir(parents=True, exist_ok=True)
     pressure_terms = []
@@ -1380,11 +1390,20 @@ def generate_plots(
         pressure_terms.append((p, colors[idx % len(colors)], label))
 
     summary_scripts = [
-        ("mu_vs_T.gnuplot", 3, 9, "Viscosity", "mu [Pa s]", plots_dir / "mu_vs_T.png"),
+        (
+            "mu_vs_T.gnuplot",
+            3,
+            9,
+            6,
+            "Viscosity",
+            "mu [Pa s]",
+            plots_dir / "mu_vs_T.png",
+        ),
         (
             "kappa_vs_T.gnuplot",
             4,
             10,
+            7,
             "Thermal Conductivity",
             "kappa [W/(m K)]",
             plots_dir / "kappa_vs_T.png",
@@ -1393,13 +1412,14 @@ def generate_plots(
             "sigma_vs_T.gnuplot",
             9,
             11,
+            8,
             "Electrical Conductivity",
             "sigma [S/m]",
             plots_dir / "sigma_vs_T.png",
         ),
     ]
 
-    for script_name, col, matf_col, title, ylabel, png_path in summary_scripts:
+    for script_name, col, matf_col, mpp_col, title, ylabel, png_path in summary_scripts:
         lines = []
         for p, color, label in pressure_terms:
             lines.append(
@@ -1410,6 +1430,11 @@ def generate_plots(
                 lines.append(
                     f"'{matf_csv}' u 1:(abs($2-{p:.16g})<1e-12 ? ${matf_col} : 1/0) "
                     f"w l lw 2 dt 2 lc rgb '{color}' title 'MATF {label}'"
+                )
+            if mutationpp_csv is not None and mutationpp_csv.exists():
+                lines.append(
+                    f"'{mutationpp_csv}' u 1:(abs($2-{p:.16g})<1e-12 ? ${mpp_col} : 1/0) "
+                    f"w l lw 2 dt 3 lc rgb '{color}' title 'Mutationpp {label}'"
                 )
         script = (
             "set datafile separator ','\n"
@@ -1541,6 +1566,10 @@ def main() -> None:
     if not matf_reference_csv.exists():
         print(f"[WARN] MATF reference CSV not found: {matf_reference_csv}")
         matf_reference_csv = None
+    mutationpp_reference_csv = args.mutationpp_reference_csv.resolve()
+    if not mutationpp_reference_csv.exists():
+        print(f"[WARN] Mutationpp reference CSV not found: {mutationpp_reference_csv}")
+        mutationpp_reference_csv = None
 
     sensitivity_report: dict[str, object] = {}
     for p in pressures:
@@ -1601,6 +1630,11 @@ def main() -> None:
                 if args.matf_reference_csv is not None
                 else ""
             ),
+            "mutationpp_reference_csv": (
+                str(args.mutationpp_reference_csv.resolve())
+                if args.mutationpp_reference_csv is not None
+                else ""
+            ),
         },
         "collision_mapping": mapping,
         "collision_rows_loaded": len(records),
@@ -1634,6 +1668,7 @@ def main() -> None:
             "sensitivity_report_json": str(sensitivity_path),
             "plots_dir": str(plots_dir),
             "matf_overlay_used": matf_reference_csv is not None,
+            "mutationpp_overlay_used": mutationpp_reference_csv is not None,
         },
     }
     meta_path = output_dir / "argon_transport_metadata.json"
@@ -1646,6 +1681,7 @@ def main() -> None:
                 plots_dir=plots_dir,
                 pressures=pressures,
                 matf_csv=matf_reference_csv,
+                mutationpp_csv=mutationpp_reference_csv,
             )
         except FileNotFoundError:
             print("[WARN] gnuplot not found. Skipping plots.")

@@ -104,6 +104,41 @@ def parse_args() -> argparse.Namespace:
         help="MATF mass fraction 2 (H2).",
     )
     parser.add_argument(
+        "--skip-mutationpp-overlay",
+        action="store_true",
+        help="Disable Mutationpp reference generation/overlay in thermo plots.",
+    )
+    parser.add_argument(
+        "--mutationpp-mppequil",
+        type=Path,
+        default=Path("/home/brjeon/Mutationpp/install/bin/mppequil"),
+        help="Path to Mutationpp mppequil binary.",
+    )
+    parser.add_argument(
+        "--mutationpp-data-dir",
+        type=Path,
+        default=Path("/home/brjeon/Mutationpp/data"),
+        help="Mutationpp data directory (MPP_DATA_DIRECTORY).",
+    )
+    parser.add_argument(
+        "--mutationpp-lib-dir",
+        type=Path,
+        default=Path("/home/brjeon/Mutationpp/install/lib"),
+        help="Mutationpp shared-library directory for LD_LIBRARY_PATH.",
+    )
+    parser.add_argument(
+        "--mutationpp-species-list",
+        type=str,
+        default="e- Ar Ar+",
+        help="Species descriptor passed to mppequil --species-list.",
+    )
+    parser.add_argument(
+        "--mutationpp-elem-x",
+        type=str,
+        default="Ar:1.0",
+        help="Element mole fractions passed to mppequil --elem-x.",
+    )
+    parser.add_argument(
         "--upload-to-gdrive",
         action="store_true",
         help="Upload generated CSV/PNG outputs to Google Drive.",
@@ -557,8 +592,175 @@ def write_matf_reference_csv(path: Path, rows: list[dict[str, float]]) -> None:
         writer.writerows(rows)
 
 
+def _mutationpp_env(data_dir: Path, lib_dir: Path) -> dict[str, str]:
+    env = dict(os.environ)
+    env["MPP_DATA_DIRECTORY"] = str(data_dir)
+    ld_old = env.get("LD_LIBRARY_PATH", "")
+    env["LD_LIBRARY_PATH"] = f"{lib_dir}:{ld_old}" if ld_old else str(lib_dir)
+    return env
+
+
+def _is_uniform_grid(values: list[float], tol: float = 1.0e-9) -> tuple[bool, float]:
+    if len(values) < 2:
+        return True, 0.0
+    step = values[1] - values[0]
+    for i in range(2, len(values)):
+        if abs((values[i] - values[i - 1]) - step) > tol * max(1.0, abs(step)):
+            return False, step
+    return True, step
+
+
+def load_mutationpp_reference_rows(
+    temperatures_k: list[float],
+    pressures_atm: list[float],
+    mppequil_bin: Path,
+    data_dir: Path,
+    lib_dir: Path,
+    species_list: str,
+    elem_x: str,
+) -> list[dict[str, float]]:
+    if not mppequil_bin.exists():
+        raise FileNotFoundError(f"Mutationpp mppequil not found: {mppequil_bin}")
+    if not data_dir.exists():
+        raise FileNotFoundError(f"Mutationpp data directory not found: {data_dir}")
+    if not lib_dir.exists():
+        raise FileNotFoundError(f"Mutationpp library directory not found: {lib_dir}")
+    if not temperatures_k:
+        raise ValueError("No temperatures provided for Mutationpp reference.")
+
+    rows: list[dict[str, float]] = []
+    t_sorted = sorted(float(t) for t in temperatures_k)
+    uniform, step = _is_uniform_grid(t_sorted)
+    env = _mutationpp_env(data_dir=data_dir, lib_dir=lib_dir)
+
+    for p_atm in pressures_atm:
+        p_pa = float(p_atm) * 101325.0
+        if uniform and len(t_sorted) > 1:
+            t_spec = f"{t_sorted[0]:.16g}:{step:.16g}:{t_sorted[-1]:.16g}"
+            cmd = [
+                str(mppequil_bin),
+                "--no-header",
+                "--species-list",
+                species_list,
+                "--elem-x",
+                elem_x,
+                "-T",
+                t_spec,
+                "-P",
+                f"{p_pa:.16g}",
+                "-m",
+                "0,1,3,9,10,32,33,40",
+            ]
+            proc = subprocess.run(
+                cmd,
+                check=True,
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+            for line in proc.stdout.splitlines():
+                text = line.strip()
+                if not text:
+                    continue
+                vals = text.split()
+                if len(vals) < 8:
+                    raise ValueError(
+                        f"Unexpected mppequil output row (expected >=8 values): {text}"
+                    )
+                rows.append(
+                    {
+                        "T_K": float(vals[0]),
+                        "P_atm": float(p_atm),
+                        "mpp_rho_kg_m3": float(vals[2]),
+                        "mpp_cp_J_kgK": float(vals[3]),
+                        "mpp_h_J_kg": float(vals[4]),
+                        "mpp_mu_Pa_s": float(vals[5]),
+                        "mpp_kappa_W_mK": float(vals[6]),
+                        "mpp_sigma_S_m": float(vals[7]),
+                    }
+                )
+        else:
+            for t in t_sorted:
+                cmd = [
+                    str(mppequil_bin),
+                    "--no-header",
+                    "--species-list",
+                    species_list,
+                    "--elem-x",
+                    elem_x,
+                    "-T",
+                    f"{t:.16g}",
+                    "-P",
+                    f"{p_pa:.16g}",
+                    "-m",
+                    "0,1,3,9,10,32,33,40",
+                ]
+                proc = subprocess.run(
+                    cmd,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                    env=env,
+                )
+                parsed = False
+                for line in proc.stdout.splitlines():
+                    text = line.strip()
+                    if not text:
+                        continue
+                    vals = text.split()
+                    if len(vals) < 8:
+                        continue
+                    rows.append(
+                        {
+                            "T_K": float(vals[0]),
+                            "P_atm": float(p_atm),
+                            "mpp_rho_kg_m3": float(vals[2]),
+                            "mpp_cp_J_kgK": float(vals[3]),
+                            "mpp_h_J_kg": float(vals[4]),
+                            "mpp_mu_Pa_s": float(vals[5]),
+                            "mpp_kappa_W_mK": float(vals[6]),
+                            "mpp_sigma_S_m": float(vals[7]),
+                        }
+                    )
+                    parsed = True
+                    break
+                if not parsed:
+                    raise ValueError(f"No numeric row returned by mppequil for T={t}, P={p_pa} Pa")
+
+    rows.sort(key=lambda r: (r["P_atm"], r["T_K"]))
+    expected = len(t_sorted) * len(pressures_atm)
+    if len(rows) != expected:
+        raise ValueError(
+            f"Mutationpp row count mismatch: expected {expected}, got {len(rows)}"
+        )
+    return rows
+
+
+def write_mutationpp_reference_csv(path: Path, rows: list[dict[str, float]]) -> None:
+    if not rows:
+        raise ValueError("No Mutationpp rows to write.")
+    fields = [
+        "T_K",
+        "P_atm",
+        "mpp_rho_kg_m3",
+        "mpp_h_J_kg",
+        "mpp_cp_J_kgK",
+        "mpp_mu_Pa_s",
+        "mpp_kappa_W_mK",
+        "mpp_sigma_S_m",
+    ]
+    with path.open("w", encoding="utf-8", newline="") as fp:
+        writer = csv.DictWriter(fp, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def generate_gnuplot_figures(
-    combined_csv: Path, plots_dir: Path, pressures: list[float], matf_csv: Path | None
+    combined_csv: Path,
+    plots_dir: Path,
+    pressures: list[float],
+    matf_csv: Path | None,
+    mutationpp_csv: Path | None,
 ) -> None:
     plots_dir.mkdir(parents=True, exist_ok=True)
 
@@ -569,21 +771,46 @@ def generate_gnuplot_figures(
         (p3, "#2ca02c", "4 atm" if abs(p3 - 4.0) < 1e-12 else f"{p3:g} atm"),
     ]
 
-    scripts: list[tuple[str, int, int, str, str, Path]] = [
-        ("rho_vs_T.gnuplot", 3, 6, "Density", "rho [kg/m^3]", plots_dir / "rho_vs_T.png"),
-        ("h_vs_T.gnuplot", 4, 7, "Specific Enthalpy", "h [J/kg]", plots_dir / "h_vs_T.png"),
-        ("cp_vs_T.gnuplot", 5, 8, "Specific Heat at Constant Pressure", "Cp [J/(kg K)]", plots_dir / "cp_vs_T.png"),
+    scripts: list[tuple[str, int, int, int, str, str, Path]] = [
+        (
+            "rho_vs_T.gnuplot",
+            3,
+            6,
+            3,
+            "Density",
+            "rho [kg/m^3]",
+            plots_dir / "rho_vs_T.png",
+        ),
+        (
+            "h_vs_T.gnuplot",
+            4,
+            7,
+            4,
+            "Specific Enthalpy",
+            "h [J/kg]",
+            plots_dir / "h_vs_T.png",
+        ),
+        (
+            "cp_vs_T.gnuplot",
+            5,
+            8,
+            5,
+            "Specific Heat at Constant Pressure",
+            "Cp [J/(kg K)]",
+            plots_dir / "cp_vs_T.png",
+        ),
         (
             "cp_vs_T_0_30000K.gnuplot",
             5,
             8,
+            5,
             "Specific Heat at Constant Pressure (0-30000 K)",
             "Cp [J/(kg K)]",
             plots_dir / "cp_vs_T_0_30000K.png",
         ),
     ]
 
-    for script_name, col, matf_col, title, ylabel, png_path in scripts:
+    for script_name, col, matf_col, mpp_col, title, ylabel, png_path in scripts:
         x_range_line = ""
         if "0_30000" in script_name:
             x_range_line = "set xrange [0:30000]\n"
@@ -601,6 +828,13 @@ def generate_gnuplot_figures(
                     (
                         f"'{matf_csv}' u 1:(abs($2-{p:.16g})<1e-12 ? ${matf_col} : 1/0) "
                         f"w l lw 2 dt 2 lc rgb '{color}' title 'MATF {label}'"
+                    )
+                )
+            if mutationpp_csv is not None and mutationpp_csv.exists():
+                plot_lines.append(
+                    (
+                        f"'{mutationpp_csv}' u 1:(abs($2-{p:.16g})<1e-12 ? ${mpp_col} : 1/0) "
+                        f"w l lw 2 dt 3 lc rgb '{color}' title 'Mutationpp {label}'"
                     )
                 )
 
@@ -765,6 +999,33 @@ def main() -> None:
             else:
                 print(f"[WARN] MATF reference generation skipped: {exc}")
 
+    mutationpp_reference_csv: Path | None = None
+    mutationpp_reference_error: str | None = None
+    if not args.skip_mutationpp_overlay:
+        default_mutationpp_csv = output_dir / "argon_mutationpp_reference_0p1_1_4atm.csv"
+        try:
+            mutationpp_rows = load_mutationpp_reference_rows(
+                temperatures_k=temperatures_eq,
+                pressures_atm=pressures,
+                mppequil_bin=args.mutationpp_mppequil.resolve(),
+                data_dir=args.mutationpp_data_dir.resolve(),
+                lib_dir=args.mutationpp_lib_dir.resolve(),
+                species_list=args.mutationpp_species_list,
+                elem_x=args.mutationpp_elem_x,
+            )
+            mutationpp_reference_csv = default_mutationpp_csv
+            write_mutationpp_reference_csv(mutationpp_reference_csv, mutationpp_rows)
+        except Exception as exc:
+            mutationpp_reference_error = str(exc)
+            if default_mutationpp_csv.exists():
+                mutationpp_reference_csv = default_mutationpp_csv
+                print(
+                    f"[WARN] Mutationpp reference regeneration failed ({exc}); "
+                    f"using existing file: {default_mutationpp_csv}"
+                )
+            else:
+                print(f"[WARN] Mutationpp reference generation skipped: {exc}")
+
     metadata = {
         "inputs": {
             "partition_json": str(args.partition_json.resolve()),
@@ -773,6 +1034,11 @@ def main() -> None:
             "matf_table": str(args.matf_table.resolve()),
             "matf_massf1": args.matf_massf1,
             "matf_massf2": args.matf_massf2,
+            "mutationpp_mppequil": str(args.mutationpp_mppequil.resolve()),
+            "mutationpp_data_dir": str(args.mutationpp_data_dir.resolve()),
+            "mutationpp_lib_dir": str(args.mutationpp_lib_dir.resolve()),
+            "mutationpp_species_list": args.mutationpp_species_list,
+            "mutationpp_elem_x": args.mutationpp_elem_x,
         },
         "species_order": SPECIES,
         "pressures_atm": pressures,
@@ -803,11 +1069,19 @@ def main() -> None:
             ],
             "plots_dir": str(plots_dir),
             "matf_reference_csv": str(matf_reference_csv) if matf_reference_csv is not None else "",
+            "mutationpp_reference_csv": (
+                str(mutationpp_reference_csv) if mutationpp_reference_csv is not None else ""
+            ),
         },
         "matf_overlay": {
             "enabled": not args.skip_matf_overlay,
             "reference_generated": matf_reference_csv is not None,
             "error": matf_reference_error,
+        },
+        "mutationpp_overlay": {
+            "enabled": not args.skip_mutationpp_overlay,
+            "reference_generated": mutationpp_reference_csv is not None,
+            "error": mutationpp_reference_error,
         },
         "dlnQdT_sample": {
             "Ar_at_300K": dlnq_dt_pf["Ar"][0],
@@ -827,6 +1101,7 @@ def main() -> None:
                 plots_dir=plots_dir,
                 pressures=pressures,
                 matf_csv=matf_reference_csv,
+                mutationpp_csv=mutationpp_reference_csv,
             )
             # Backward-compatible aliases for previously shared plot names.
             legacy_plot_map = {
@@ -869,6 +1144,8 @@ def main() -> None:
         ]
         if matf_reference_csv is not None and matf_reference_csv.exists():
             upload_paths.append(matf_reference_csv)
+        if mutationpp_reference_csv is not None and mutationpp_reference_csv.exists():
+            upload_paths.append(mutationpp_reference_csv)
         if not args.skip_plots:
             upload_paths.extend(sorted(plots_dir.glob("*.png")))
 
@@ -901,6 +1178,8 @@ def main() -> None:
     print(f"[OK] Wrote: {cp_peak_csv}")
     if matf_reference_csv is not None:
         print(f"[OK] Wrote: {matf_reference_csv}")
+    if mutationpp_reference_csv is not None:
+        print(f"[OK] Wrote: {mutationpp_reference_csv}")
     print(f"[OK] Wrote: {metadata_path}")
     if not args.skip_plots:
         print(f"[OK] Wrote plots in: {plots_dir}")
