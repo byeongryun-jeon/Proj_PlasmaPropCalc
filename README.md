@@ -13,6 +13,10 @@ Murphy 방법과 Mutation++를 비교하여 플라즈마 물성치를 계산/검
 5. Diffusion coefficient 계산
 6. Ar-He-H2 삼중가스 계산
 
+## 연구노트
+
+- Tutorial 01 (Ar LTE): `docs/tutorials/Tutorial01_Ar_LTE_ResearchNote.md`
+
 ## 디렉터리 구조
 
 ```text
@@ -89,3 +93,26 @@ python3 scripts/murphy/build_collision_integrals.py
 - `data/processed/transport/argon_collision_integrals_all.csv`
 - `data/processed/transport/mutationpp_argon_collision_pairs.xml`
 - `data/processed/transport/argon_collision_integrals_metadata.json`
+
+## Phase 5 실행 (Chapman-Enskog 수송계수)
+
+```bash
+cd /home/brjeon/Proj_PlasmaPropCalc
+python3 scripts/murphy/build_transport_properties.py
+```
+
+출력:
+
+- `data/processed/transport_properties/argon_transport_0p1_1_4atm.csv`
+- `data/processed/transport_properties/argon_transport_0p1atm.csv`
+- `data/processed/transport_properties/argon_transport_1atm.csv`
+- `data/processed/transport_properties/argon_transport_4atm.csv`
+- `data/processed/transport_properties/argon_transport_metadata.json`
+- `data/processed/transport_properties/plots/mu_vs_T.png`
+- `data/processed/transport_properties/plots/kappa_vs_T.png`
+- `data/processed/transport_properties/plots/sigma_vs_T.png`
+- `data/processed/transport_properties/plots/kappa_components_0p1atm.png`
+- `data/processed/transport_properties/plots/kappa_components_1atm.png`
+- `data/processed/transport_properties/plots/kappa_components_4atm.png`
+
+상세 방법/근사식은 `docs/methods/phase5_transport_coefficients.md` 참고.
