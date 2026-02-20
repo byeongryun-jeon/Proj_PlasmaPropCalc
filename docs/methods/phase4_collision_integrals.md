@@ -65,6 +65,13 @@ cd /home/brjeon/Proj_PlasmaPropCalc
 python3 scripts/murphy/build_collision_integrals.py
 ```
 
+Murphy strict 재현 모드:
+
+```bash
+cd /home/brjeon/Proj_PlasmaPropCalc
+python3 scripts/murphy/build_collision_integrals.py --murphy-strict
+```
+
 or with project venv:
 
 ```bash
@@ -75,4 +82,4 @@ cd /home/brjeon/Proj_PlasmaPropCalc
 ## Notes
 
 - `frost1964` values are figure-digitized approximations.
-- `Ar-Ar` currently uses a surrogate instead of full HFDTCS2 scattering integration.
+- `Ar-Ar` model은 `--ar-ar-model`로 선택 가능하며, Murphy strict에서는 HFDTCS2 산란 적분을 사용합니다.

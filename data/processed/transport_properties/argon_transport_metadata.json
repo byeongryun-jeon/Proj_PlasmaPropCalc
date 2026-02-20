@@ -31,38 +31,39 @@
     "reaction_scale": 1.0,
     "pr_heavy": 0.67,
     "pr_int": 1.0,
-    "k_reac_model": "legacy_composite"
+    "k_reac_model": "butler_mole",
+    "murphy_strict": true
   },
   "peaks": {
     "0.1 atm": {
       "mu_peak_T_K": 9100.0,
-      "mu_peak_Pa_s": 0.0002279844359956023,
+      "mu_peak_Pa_s": 0.00022711358083372552,
       "kappa_peak_T_K": 30000.0,
-      "kappa_peak_W_mK": 3.8268234382082436,
-      "kappa_reac_peak_T_K": 11500.0,
-      "kappa_reac_peak_W_mK": 1.6701658234028147,
+      "kappa_peak_W_mK": 3.7929937891671455,
+      "kappa_reac_peak_T_K": 11900.0,
+      "kappa_reac_peak_W_mK": 0.058127850921037526,
       "sigma_peak_T_K": 30000.0,
-      "sigma_peak_S_m": 8089.8895334392255
+      "sigma_peak_S_m": 8089.889151668092
     },
     "1 atm": {
-      "mu_peak_T_K": 10500.0,
-      "mu_peak_Pa_s": 0.0002486903555679596,
+      "mu_peak_T_K": 10300.0,
+      "mu_peak_Pa_s": 0.0002475727645677853,
       "kappa_peak_T_K": 30000.0,
-      "kappa_peak_W_mK": 4.991271185580293,
-      "kappa_reac_peak_T_K": 13100.0,
-      "kappa_reac_peak_W_mK": 1.562737109835494,
-      "sigma_peak_T_K": 10700.0,
-      "sigma_peak_S_m": 29113.758139941972
+      "kappa_peak_W_mK": 4.947080739652131,
+      "kappa_reac_peak_T_K": 13500.0,
+      "kappa_reac_peak_W_mK": 0.04131949430041,
+      "sigma_peak_T_K": 30000.0,
+      "sigma_peak_S_m": 10981.966006024211
     },
     "4 atm": {
-      "mu_peak_T_K": 11500.0,
-      "mu_peak_Pa_s": 0.00026388263831935815,
+      "mu_peak_T_K": 11300.0,
+      "mu_peak_Pa_s": 0.00026259875035151915,
       "kappa_peak_T_K": 30000.0,
-      "kappa_peak_W_mK": 6.165740783638302,
-      "kappa_reac_peak_T_K": 14500.0,
-      "kappa_reac_peak_W_mK": 1.5095806345053195,
-      "sigma_peak_T_K": 12500.0,
-      "sigma_peak_S_m": 19876.87278212931
+      "kappa_peak_W_mK": 6.009718595023158,
+      "kappa_reac_peak_T_K": 14700.0,
+      "kappa_reac_peak_W_mK": 0.03247266508668244,
+      "sigma_peak_T_K": 24300.0,
+      "sigma_peak_S_m": 14210.855010303847
     }
   },
   "notes": [

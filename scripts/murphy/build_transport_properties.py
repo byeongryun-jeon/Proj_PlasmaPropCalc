@@ -296,7 +296,22 @@ def parse_args() -> argparse.Namespace:
             "butler_mole_cp=(mole-gradient + cp amplification)."
         ),
     )
+    parser.add_argument(
+        "--murphy-strict",
+        action="store_true",
+        help=(
+            "Apply stricter Murphy-style transport closure defaults. "
+            "Currently sets k_reac model to Butler mole-gradient form."
+        ),
+    )
     return parser.parse_args()
+
+
+def apply_murphy_profile(args: argparse.Namespace) -> None:
+    if not args.murphy_strict:
+        return
+    args.k_reac_model = "butler_mole"
+    args.reaction_scale = 1.0
 
 
 def canonical_pair(s1: str, s2: str) -> tuple[str, str]:
@@ -1438,6 +1453,7 @@ def generate_plots(
 
 def main() -> None:
     args = parse_args()
+    apply_murphy_profile(args)
 
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1600,6 +1616,7 @@ def main() -> None:
             "pr_heavy": args.pr_heavy,
             "pr_int": args.pr_int,
             "k_reac_model": args.k_reac_model,
+            "murphy_strict": args.murphy_strict,
         },
         "peaks": peak_summary,
         "notes": [

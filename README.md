@@ -86,6 +86,13 @@ cd /home/brjeon/Proj_PlasmaPropCalc
 python3 scripts/murphy/build_collision_integrals.py
 ```
 
+Murphy strict 재현 모드:
+
+```bash
+cd /home/brjeon/Proj_PlasmaPropCalc
+python3 scripts/murphy/build_collision_integrals.py --murphy-strict
+```
+
 출력:
 
 - `data/processed/transport/argon_collision_integrals_non_charged.csv`
@@ -99,6 +106,13 @@ python3 scripts/murphy/build_collision_integrals.py
 ```bash
 cd /home/brjeon/Proj_PlasmaPropCalc
 python3 scripts/murphy/build_transport_properties.py
+```
+
+Murphy strict 재현 모드:
+
+```bash
+cd /home/brjeon/Proj_PlasmaPropCalc
+python3 scripts/murphy/build_transport_properties.py --murphy-strict
 ```
 
 출력:

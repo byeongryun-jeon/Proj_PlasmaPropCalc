@@ -384,23 +384,39 @@ def parse_args() -> argparse.Namespace:
             "and calibrated Ar-Ar(z+) model selection)."
         ),
     )
+    parser.add_argument(
+        "--murphy-strict",
+        action="store_true",
+        help=(
+            "Apply stricter Murphy-style settings for reproducibility: "
+            "HFDTCS2 Ar-Ar, Aubreton/Barker Ar-Ar+, Murphy-text Ar-Ar+ state mix, "
+            "Milloy/Frost-only e-Ar (disable LXCat merge), and Q14/Q15 Murphy closure."
+        ),
+    )
     return parser.parse_args()
 
 
 def apply_murphy_profile(args: argparse.Namespace) -> None:
     """Apply deterministic Murphy-closest defaults from currently available data."""
-    if not args.murphy_closest:
+    if not args.murphy_closest and not args.murphy_strict:
         return
     args.debye_screening_density = "electron_only"
     args.debye_length_scale = 1.0
     args.coulomb_lnlambda_scale = 1.0
-    args.e_ar_high_order_blend = 1.0
     # Current best agreement against MATF/Murphy-like reference uses sqrt(z)
     # scaling for Ar-Ar(z+) with available data.
     args.highcharge_ion_neutral_model = "sqrt_z"
     args.ar_ar_model = "hfdtcs2_scatter"
     args.ar_arp_elastic_model = "aubreton_barker"
     args.ar_arp_state_mix = "boltzmann_normalized"
+    args.e_ar_high_order_blend = 1.0
+
+    if args.murphy_strict:
+        # Strict mode prefers Murphy-style closures over local fitting choices.
+        args.e_ar_high_order_blend = 0.0
+        args.ar_arp_state_mix = "murphy_text"
+        # Disable optional LXCat merge to keep Milloy/Frost basis.
+        args.lxcat_e_ar_csv = None
 
 
 def build_temperature_grid(t_min: float, t_max: float, t_step: float, include_t_max: bool) -> list[float]:
@@ -1889,6 +1905,7 @@ def main() -> None:
                 "preferred_database": args.lxcat_database,
                 "process_kind": args.lxcat_process,
             },
+            "e_ar_sources_used": e_ar_sources,
         },
         "temperature_grid": {
             "t_min": min(temperatures),
@@ -1906,7 +1923,12 @@ def main() -> None:
             "e_ar_high_order_blend": args.e_ar_high_order_blend,
         },
         "murphy_profile": {
-            "enabled": args.murphy_closest,
+            "enabled": args.murphy_closest or args.murphy_strict,
+            "mode": (
+                "strict"
+                if args.murphy_strict
+                else ("closest" if args.murphy_closest else "manual")
+            ),
             "highcharge_ion_neutral_model": args.highcharge_ion_neutral_model,
             "ar_arp_elastic_model": args.ar_arp_elastic_model,
             "ar_arp_state_mix": args.ar_arp_state_mix,
@@ -1948,6 +1970,12 @@ def main() -> None:
                 else "Ar-Ar+ elastic currently uses polarization-capture approximation."
             ),
             f"e-Ar source blend: {e_ar_source_label}",
+            (
+                "Murphy strict mode active: LXCat merge disabled, Ar-Ar+ state mix set to murphy_text, "
+                "and e-Ar Q14/Q15 use Murphy closure (Q14=Q15=Q11)."
+                if args.murphy_strict
+                else "Murphy strict mode inactive."
+            ),
             "Frost1964 high-energy e-Ar points are figure-digitized approximations when LXCat replacement is unavailable.",
             "Charged-charged table uses electron density from phase-2 equilibrium CSV and is pressure-dependent.",
             "Debye length is capped and ne is floored for low-ionization stability in screened-Coulomb mode.",

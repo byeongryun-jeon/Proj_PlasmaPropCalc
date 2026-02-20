@@ -7,14 +7,18 @@
       "aubreton1986": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/argon/aubreton1986_ar_arplus_elastic_potentials.csv",
       "milloy1977": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/argon/milloy1977_e_ar_momentum_transfer_table1.csv",
       "frost1964_digitized": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/argon/frost1964_e_ar_high_energy_digitized.csv",
-      "lxcat_e_ar_csv": "/home/brjeon/matfLookUpPython/lxcatData.txt",
+      "lxcat_e_ar_csv": "",
       "mason1967_tableI": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/argon/mason1967_tableI_t2omega.csv",
       "mason1967_tableII": "/home/brjeon/Proj_PlasmaPropCalc/data/raw/murphy/collision_integrals/argon/mason1967_tableII_abc.csv"
     },
     "lxcat_options": {
       "preferred_database": "Biagi",
       "process_kind": "ELASTIC"
-    }
+    },
+    "e_ar_sources_used": [
+      "Frost1964_FIGURE_DIGITIZED",
+      "Milloy1977_Table1"
+    ]
   },
   "temperature_grid": {
     "t_min": 300.0,
@@ -33,13 +37,14 @@
     "debye_length_scale": 1.0,
     "coulomb_tstar_max": 10000.0,
     "coulomb_lnlambda_scale": 1.0,
-    "e_ar_high_order_blend": 1.0
+    "e_ar_high_order_blend": 0.0
   },
   "murphy_profile": {
     "enabled": true,
+    "mode": "strict",
     "highcharge_ion_neutral_model": "sqrt_z",
     "ar_arp_elastic_model": "aubreton_barker",
-    "ar_arp_state_mix": "boltzmann_normalized"
+    "ar_arp_state_mix": "murphy_text"
   },
   "debye_screening_density_model": "electron_only",
   "models": {
@@ -58,7 +63,8 @@
   "notes": [
     "Ar-Ar uses numerical classical scattering with Aziz HFD reduced potential.",
     "Ar-Ar+ elastic uses Aubreton state-resolved potentials and Barker-style classical scattering.",
-    "e-Ar source blend: Frost1964_FIGURE_DIGITIZED + LXCat:Biagi (transcription of data from SF Biagi's Fortran code, Magboltz.):ELASTIC + Milloy1977_Table1",
+    "e-Ar source blend: Frost1964_FIGURE_DIGITIZED + Milloy1977_Table1",
+    "Murphy strict mode active: LXCat merge disabled, Ar-Ar+ state mix set to murphy_text, and e-Ar Q14/Q15 use Murphy closure (Q14=Q15=Q11).",
     "Frost1964 high-energy e-Ar points are figure-digitized approximations when LXCat replacement is unavailable.",
     "Charged-charged table uses electron density from phase-2 equilibrium CSV and is pressure-dependent.",
     "Debye length is capped and ne is floored for low-ionization stability in screened-Coulomb mode.",
