@@ -24,24 +24,30 @@
   ],
   "charged_model_limits": {
     "min_ne_m3": 100000000000000.0,
-    "max_debye_length_m": 0.001
+    "max_debye_length_m": 0.001,
+    "debye_length_scale": 1.0,
+    "coulomb_tstar_max": 10000.0,
+    "coulomb_lnlambda_scale": 1.0,
+    "e_ar_high_order_blend": 0.0
   },
+  "debye_screening_density_model": "electron_only",
   "models": {
     "Ar-Ar": "LJ surrogate with Aziz epsilon/k and sigma",
     "Ar-Ar+": "Qex model (MurphyTam2014) + Langevin elastic capture model",
     "e-Ar": "Maxwellian average of Qm(E), Milloy table + Frost high-energy extension",
-    "charged-charged": "Mason1967 reduced tables + Debye length (electron-only)"
+    "charged-charged": "Mason1967 reduced tables + Debye-Huckel screening"
   },
   "outputs": {
     "non_charged_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport/argon_collision_integrals_non_charged.csv",
     "charged_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport/argon_collision_integrals_charged_by_pressure.csv",
     "all_csv": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport/argon_collision_integrals_all.csv",
-    "mutationpp_snippet_xml": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport/mutationpp_argon_collision_pairs.xml"
+    "mutationpp_snippet_xml": ""
   },
   "notes": [
     "Ar-Ar full HFDTCS2 classical scattering integration is planned; current version uses a documented LJ-style surrogate.",
     "Frost1964 high-energy e-Ar points are figure-digitized approximations.",
     "Charged-charged table uses electron density from phase-2 equilibrium CSV and is pressure-dependent.",
-    "Debye length is capped and ne is floored for low-ionization stability in screened-Coulomb mode."
+    "Debye length is capped and ne is floored for low-ionization stability in screened-Coulomb mode.",
+    "Coulomb tuning knobs (debye_length_scale, coulomb_tstar_max, coulomb_lnlambda_scale) can be calibrated against reference lookup tables."
   ]
 }

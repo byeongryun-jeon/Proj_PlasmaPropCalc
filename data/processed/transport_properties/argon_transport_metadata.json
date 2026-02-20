@@ -9,6 +9,8 @@
     "format": "long",
     "q11_column": "Q11_m2",
     "q22_column": "Q22_m2",
+    "q14_column": "Q14_m2",
+    "q15_column": "Q15_m2",
     "ast_column": "Ast",
     "bst_column": "Bst",
     "cst_column": "Cst"
@@ -24,45 +26,46 @@
     "kappa_H": "Devoto/Muckenfuss-Curtiss 2nd-order heavy-species coefficient matrix",
     "kappa_e": "Devoto 3rd-order electron Lee matrix",
     "kappa_int": "Hirschfelder-Eucken internal conductivity (algebraic)",
-    "kappa_reac": "Butler-Brokaw-style composition-gradient term",
+    "kappa_reac": "Configurable Butler-Brokaw-style closure selected by --k-reac-model",
     "sigma": "Devoto 3rd-order electron conductivity from Lee matrix inverse",
-    "electron_missing_integrals": "Q14ei=Q13ei, Q15ei=Q13ei (default ratio fallback); Q23ee/Q24ee from Debye-Huckel table"
+    "electron_missing_integrals": "Q14ei/Q15ei read from Phase-4 CSV when available (including e-Ar regularized closure rows); fallback Q14ei=Q15ei=Q13ei is used only when absent."
   },
   "constants": {
     "reaction_scale": 1.0,
     "pr_heavy": 0.67,
-    "pr_int": 1.0
+    "pr_int": 1.0,
+    "k_reac_model": "legacy_composite"
   },
   "peaks": {
     "0.1 atm": {
-      "mu_peak_T_K": 4500.0,
-      "mu_peak_Pa_s": 0.00014053688109073246,
+      "mu_peak_T_K": 8500.0,
+      "mu_peak_Pa_s": 0.00020703971060248954,
       "kappa_peak_T_K": 30000.0,
-      "kappa_peak_W_mK": 2.752918213112116,
-      "kappa_reac_peak_T_K": 22300.0,
-      "kappa_reac_peak_W_mK": 0.07329950524129142,
-      "sigma_peak_T_K": 21900.0,
-      "sigma_peak_S_m": 218908.0259926524
+      "kappa_peak_W_mK": 3.8268215583039065,
+      "kappa_reac_peak_T_K": 11500.0,
+      "kappa_reac_peak_W_mK": 1.2218255578960309,
+      "sigma_peak_T_K": 30000.0,
+      "sigma_peak_S_m": 8089.889151668092
     },
     "1 atm": {
-      "mu_peak_T_K": 4700.0,
-      "mu_peak_Pa_s": 0.00014542257254578368,
+      "mu_peak_T_K": 9500.0,
+      "mu_peak_Pa_s": 0.000221083822625241,
       "kappa_peak_T_K": 30000.0,
-      "kappa_peak_W_mK": 3.544055304958366,
-      "kappa_reac_peak_T_K": 27500.0,
-      "kappa_reac_peak_W_mK": 0.042212319543150224,
-      "sigma_peak_T_K": 24100.0,
-      "sigma_peak_S_m": 391648.9997454775
+      "kappa_peak_W_mK": 4.991128202302261,
+      "kappa_reac_peak_T_K": 13100.0,
+      "kappa_reac_peak_W_mK": 1.0834129288736543,
+      "sigma_peak_T_K": 30000.0,
+      "sigma_peak_S_m": 10981.966006024211
     },
     "4 atm": {
-      "mu_peak_T_K": 4900.0,
-      "mu_peak_Pa_s": 0.00014892362480213039,
+      "mu_peak_T_K": 10300.0,
+      "mu_peak_Pa_s": 0.00023071225126628964,
       "kappa_peak_T_K": 30000.0,
-      "kappa_peak_W_mK": 4.258779916795855,
-      "kappa_reac_peak_T_K": 30000.0,
-      "kappa_reac_peak_W_mK": 0.02136259199467537,
-      "sigma_peak_T_K": 25100.0,
-      "sigma_peak_S_m": 1130506.6377971314
+      "kappa_peak_W_mK": 6.163016118191363,
+      "kappa_reac_peak_T_K": 14300.0,
+      "kappa_reac_peak_W_mK": 0.9986148172000242,
+      "sigma_peak_T_K": 24300.0,
+      "sigma_peak_S_m": 14210.855010303847
     }
   },
   "notes": [
@@ -76,6 +79,7 @@
       "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport_properties/argon_transport_1atm.csv",
       "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport_properties/argon_transport_4atm.csv"
     ],
+    "sensitivity_report_json": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport_properties/argon_transport_sensitivity_report.json",
     "plots_dir": "/home/brjeon/Proj_PlasmaPropCalc/data/processed/transport_properties/plots"
   }
 }

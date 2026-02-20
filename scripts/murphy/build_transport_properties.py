@@ -197,6 +197,8 @@ class CollisionRecord:
     s2: str
     q11_m2: float
     q22_m2: float
+    q14_m2: float | None
+    q15_m2: float | None
     ast: float
     bst: float
     cst: float
@@ -208,6 +210,8 @@ class CollisionRecord:
 class CollisionValue:
     q11_m2: float
     q22_m2: float
+    q14_m2: float | None
+    q15_m2: float | None
     ast: float
     bst: float
     cst: float
@@ -273,6 +277,18 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=1.0,
         help="Internal conductivity Prandtl-like constant.",
+    )
+    parser.add_argument(
+        "--k-reac-model",
+        choices=["legacy_composite", "butler_mass", "butler_mole", "butler_mole_cp"],
+        default="legacy_composite",
+        help=(
+            "Reaction-conductivity closure: "
+            "legacy_composite=(mass-gradient + cp amplification), "
+            "butler_mass=(mass-gradient only), "
+            "butler_mole=(mole-gradient only), "
+            "butler_mole_cp=(mole-gradient + cp amplification)."
+        ),
     )
     return parser.parse_args()
 
@@ -374,6 +390,8 @@ def col_as_float(row: dict[str, str], keys: list[str], default: float | None = N
 def load_collision_long(path: Path, headers: list[str]) -> tuple[list[CollisionRecord], dict[str, object]]:
     q11_col = "Q11_m2" if "Q11_m2" in headers else "Q11_A2"
     q22_col = "Q22_m2" if "Q22_m2" in headers else "Q22_A2"
+    q14_col = "Q14_m2" if "Q14_m2" in headers else ("Q14_A2" if "Q14_A2" in headers else "")
+    q15_col = "Q15_m2" if "Q15_m2" in headers else ("Q15_A2" if "Q15_A2" in headers else "")
     area_scale = 1.0 if q11_col.endswith("_m2") else 1.0e-20
 
     records: list[CollisionRecord] = []
@@ -402,6 +420,15 @@ def load_collision_long(path: Path, headers: list[str]) -> tuple[list[CollisionR
             if q22 <= 0.0:
                 q22 = q11
 
+            q14: float | None = None
+            q15: float | None = None
+            if q14_col and row.get(q14_col, "") not in ("", None):
+                v = float(row[q14_col]) * (1.0 if q14_col.endswith("_m2") else 1.0e-20)
+                q14 = v if v > 0.0 else None
+            if q15_col and row.get(q15_col, "") not in ("", None):
+                v = float(row[q15_col]) * (1.0 if q15_col.endswith("_m2") else 1.0e-20)
+                q15 = v if v > 0.0 else None
+
             ast = col_as_float(row, ["Ast", "Astar", "A_st"], default=q22 / q11)
             bst_val = row.get("Bst", "")
             cst_val = row.get("Cst", "")
@@ -419,6 +446,8 @@ def load_collision_long(path: Path, headers: list[str]) -> tuple[list[CollisionR
                     s2=pair[1],
                     q11_m2=q11,
                     q22_m2=q22,
+                    q14_m2=q14,
+                    q15_m2=q15,
                     ast=ast,
                     bst=bst,
                     cst=cst,
@@ -431,6 +460,8 @@ def load_collision_long(path: Path, headers: list[str]) -> tuple[list[CollisionR
         "format": "long",
         "q11_column": q11_col,
         "q22_column": q22_col,
+        "q14_column": q14_col if q14_col else "",
+        "q15_column": q15_col if q15_col else "",
         "ast_column": "Ast" if "Ast" in headers else "derived(Q22/Q11)",
         "bst_column": "Bst" if "Bst" in headers else "derived",
         "cst_column": "Cst" if "Cst" in headers else "derived",
@@ -485,6 +516,8 @@ def load_collision_wide(path: Path, headers: list[str]) -> tuple[list[CollisionR
                         s2=pair[1],
                         q11_m2=q11,
                         q22_m2=q22,
+                        q14_m2=None,
+                        q15_m2=None,
                         ast=ast,
                         bst=bst,
                         cst=cst,
@@ -530,7 +563,7 @@ class CollisionDatabase:
 
         for key, rows in grouped.items():
             rows_sorted = sorted(rows, key=lambda r: r.t_k)
-            self._tables[key] = {
+            table: dict[str, list[float] | str] = {
                 "T": [r.t_k for r in rows_sorted],
                 "Q11": [r.q11_m2 for r in rows_sorted],
                 "Q22": [r.q22_m2 for r in rows_sorted],
@@ -540,6 +573,11 @@ class CollisionDatabase:
                 "category": rows_sorted[0].category,
                 "source": rows_sorted[0].source,
             }
+            if all(r.q14_m2 is not None for r in rows_sorted):
+                table["Q14"] = [float(r.q14_m2) for r in rows_sorted if r.q14_m2 is not None]
+            if all(r.q15_m2 is not None for r in rows_sorted):
+                table["Q15"] = [float(r.q15_m2) for r in rows_sorted if r.q15_m2 is not None]
+            self._tables[key] = table
 
     def _interp(self, key: tuple[str, str, float | None], t_k: float) -> CollisionValue | None:
         table = self._tables.get(key)
@@ -548,12 +586,14 @@ class CollisionDatabase:
         t = table["T"]
         q11 = interp1(t, table["Q11"], t_k)
         q22 = interp1(t, table["Q22"], t_k)
+        q14 = interp1(t, table["Q14"], t_k) if "Q14" in table else None
+        q15 = interp1(t, table["Q15"], t_k) if "Q15" in table else None
         ast = interp1(t, table["Ast"], t_k)
         bst = interp1(t, table["Bst"], t_k)
         cst = interp1(t, table["Cst"], t_k)
         cat = str(table["category"])
         src = str(table["source"])
-        return CollisionValue(q11, q22, ast, bst, cst, cat, src, fallback="")
+        return CollisionValue(q11, q22, q14, q15, ast, bst, cst, cat, src, fallback="")
 
     def _lookup_direct(self, s1: str, s2: str, t_k: float, p_atm: float) -> CollisionValue | None:
         a, b = canonical_pair(s1, s2)
@@ -562,7 +602,7 @@ class CollisionDatabase:
             return val
         return self._interp((a, b, None), t_k)
 
-    def get(self, s1: str, s2: str, t_k: float, p_atm: float) -> CollisionValue:
+    def get(self, s1: str, s2: str, t_k: float, p_atm: float, track: bool = True) -> CollisionValue:
         direct = self._lookup_direct(s1, s2, t_k, p_atm)
         if direct is not None:
             return direct
@@ -575,10 +615,13 @@ class CollisionDatabase:
                 if base is not None:
                     z = abs(CHARGE[ion])
                     scale = math.sqrt(float(z))
-                    self.fallback_counts[f"Ar-{ion}:scaled_from_Ar-Ar+"] += 1
+                    if track:
+                        self.fallback_counts[f"Ar-{ion}:scaled_from_Ar-Ar+"] += 1
                     return CollisionValue(
                         q11_m2=base.q11_m2 * scale,
                         q22_m2=base.q22_m2 * scale,
+                        q14_m2=None,
+                        q15_m2=None,
                         ast=base.ast,
                         bst=base.bst,
                         cst=base.cst,
@@ -590,7 +633,8 @@ class CollisionDatabase:
         self_i = self._lookup_direct(s1, s1, t_k, p_atm)
         self_j = self._lookup_direct(s2, s2, t_k, p_atm)
         if self_i is not None and self_j is not None:
-            self.fallback_counts[f"{s1}-{s2}:geometric_self"] += 1
+            if track:
+                self.fallback_counts[f"{s1}-{s2}:geometric_self"] += 1
             q11 = math.sqrt(max(self_i.q11_m2, 1e-300) * max(self_j.q11_m2, 1e-300))
             q22 = math.sqrt(max(self_i.q22_m2, 1e-300) * max(self_j.q22_m2, 1e-300))
             ast = q22 / max(q11, 1e-300)
@@ -599,6 +643,8 @@ class CollisionDatabase:
             return CollisionValue(
                 q11_m2=q11,
                 q22_m2=q22,
+                q14_m2=None,
+                q15_m2=None,
                 ast=ast,
                 bst=bst,
                 cst=cst,
@@ -607,10 +653,13 @@ class CollisionDatabase:
                 fallback="geometric_self",
             )
 
-        self.fallback_counts[f"{s1}-{s2}:constant"] += 1
+        if track:
+            self.fallback_counts[f"{s1}-{s2}:constant"] += 1
         return CollisionValue(
             q11_m2=1.0e-19,
             q22_m2=1.2e-19,
+            q14_m2=None,
+            q15_m2=None,
             ast=1.2,
             bst=1.1,
             cst=0.9,
@@ -762,6 +811,47 @@ def solve_linear_system(a: list[list[float]], b: list[float]) -> list[float]:
     return x
 
 
+def matrix_metrics(mat: list[list[float]]) -> dict[str, float]:
+    n = len(mat)
+    if n == 0:
+        return {
+            "diag_min": 0.0,
+            "diag_max": 0.0,
+            "diag_ratio": 0.0,
+            "offdiag_to_diag": 0.0,
+        }
+    diag = [abs(mat[i][i]) for i in range(n)]
+    diag_min = min(diag)
+    diag_max = max(diag)
+    diag_sum = sum(diag)
+    offdiag_sum = 0.0
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                continue
+            offdiag_sum += abs(mat[i][j])
+    return {
+        "diag_min": diag_min,
+        "diag_max": diag_max,
+        "diag_ratio": diag_max / max(diag_min, 1.0e-300),
+        "offdiag_to_diag": offdiag_sum / max(diag_sum, 1.0e-300),
+    }
+
+
+def normalize_weights(weights: dict[str, float]) -> dict[str, float]:
+    total = sum(max(v, 0.0) for v in weights.values())
+    if total <= 0.0:
+        return {k: 0.0 for k in weights}
+    return {k: max(v, 0.0) / total for k, v in weights.items()}
+
+
+def dominant_pair(weight_share: dict[str, float]) -> tuple[str, float]:
+    if not weight_share:
+        return "", 0.0
+    pair = max(weight_share, key=weight_share.get)
+    return pair, weight_share[pair]
+
+
 def debye_huckel_repulsive_ee_integrals(
     t_k: float, n_e: float
 ) -> tuple[float, float, float, float, float]:
@@ -770,7 +860,7 @@ def debye_huckel_repulsive_ee_integrals(
     ne = max(n_e, 1.0e-16)
 
     b = E_CHARGE * E_CHARGE / (8.0 * PI * EPS0 * K_B * t)
-    lambda_d = math.sqrt(0.5 * EPS0 * K_B * t / (ne * E_CHARGE * E_CHARGE))
+    lambda_d = math.sqrt(EPS0 * K_B * t / (ne * E_CHARGE * E_CHARGE))
     lambda_capped = min(lambda_d, 2.0 * COULOMB_TSTAR_GRID[-1] * b)
     tstar = max(0.5 * lambda_capped / max(b, 1.0e-300), COULOMB_TSTAR_GRID[0])
 
@@ -819,6 +909,7 @@ def compute_transport_for_state(
     state: dict[str, float],
     thermo: dict[str, float],
     y_deriv: dict[str, float],
+    x_deriv: dict[str, float],
     t_pf: list[float],
     h_mass_pf: dict[str, list[float]],
     cp_mass_pf: dict[str, list[float]],
@@ -826,7 +917,8 @@ def compute_transport_for_state(
     pr_heavy: float,
     pr_int: float,
     reaction_scale: float,
-) -> dict[str, float]:
+    k_reac_model: str,
+) -> tuple[dict[str, float], dict[str, object]]:
     t = state["T_K"]
     p = state["P_atm"]
 
@@ -849,6 +941,14 @@ def compute_transport_for_state(
         q22ii = max(db.get(sp, sp, t, p).q22_m2, 1.0e-300)
         etafac = 5.0 / 16.0 * math.sqrt(PI * K_B) * math.sqrt(MASS[sp])
         etai[i] = math.sqrt(t) * etafac / q22ii
+
+    heavy_pair_weights_raw: dict[str, float] = {}
+    for i, si in enumerate(HEAVY):
+        for sj in HEAVY[i:]:
+            val_ij = db.get(si, sj, t, p, track=False)
+            k11_ij = collision_rate_coeff(t, val_ij.q11_m2, MASS[si], MASS[sj])
+            heavy_pair_weights_raw[f"{si}-{sj}"] = n[si] * n[sj] * k11_ij
+    heavy_pair_weights = normalize_weights(heavy_pair_weights_raw)
 
     pair_data: dict[tuple[int, int], tuple[float, float, float, float]] = {}
     for j in range(nh):
@@ -880,6 +980,7 @@ def compute_transport_for_state(
             a_mu[i][i] += fac * (1.2 * mj / mi * ast + 2.0)
             a_mu[j][j] += fac * (1.2 * mi / mj * ast + 2.0)
 
+    mu_matrix_stat = matrix_metrics(a_mu)
     alpha_mu = solve_linear_system(a_mu, xh)
     mu_heavy = max(sum(xh[i] * alpha_mu[i] for i in range(nh)), 1.0e-12)
 
@@ -909,6 +1010,7 @@ def compute_transport_for_state(
                 mjij * (30.0 * mjij + 16.0 * miij * ast) + miij * miij * (25.0 - 12.0 * bst)
             )
 
+    kh_matrix_stat = matrix_metrics(a_h)
     alpha_h = solve_linear_system(a_h, xh)
     k_h = max(sum(xh[i] * alpha_h[i] for i in range(nh)), 0.0)
 
@@ -923,14 +1025,16 @@ def compute_transport_for_state(
     b_e_acc = 0.0
     c_e_acc = 0.0
 
+    electron_pair_weights_raw: dict[str, float] = {}
     for sp in HEAVY:
         val = db.get("e-", sp, t, p)
         q11 = max(val.q11_m2, 1.0e-300)
         q12 = max(val.cst * q11, 1.0e-300)
         q13 = max((5.0 * q12 - val.bst * q11) / 4.0, 1.0e-300)
-        # Mutation++ default fallback for missing higher-order e-i integrals.
-        q14 = q13
-        q15 = q13
+        # For charged pairs, Q14/Q15 can be carried from Debye-Huckel tables.
+        # For electron-neutral pairs, keep the Magin-style fallback Q14=Q15=Q13.
+        q14 = max(val.q14_m2, 1.0e-300) if val.q14_m2 is not None else q13
+        q15 = max(val.q15_m2, 1.0e-300) if val.q15_m2 is not None else q13
 
         q11_eh.append(q11)
         q12_eh.append(q12)
@@ -939,10 +1043,12 @@ def compute_transport_for_state(
         q15_eh.append(q15)
 
         w = x[sp] * q11
+        electron_pair_weights_raw[f"e--{sp}"] = w
         wsum_e += w
         a_e_acc += w * val.ast
         b_e_acc += w * val.bst
         c_e_acc += w * val.cst
+    electron_pair_weights = normalize_weights(electron_pair_weights_raw)
 
     a_e = a_e_acc / wsum_e if wsum_e > 0.0 else 1.0
     b_e = b_e_acc / wsum_e if wsum_e > 0.0 else 1.0
@@ -987,6 +1093,7 @@ def compute_transport_for_state(
     lee3[2][1] = lee3[1][2]
     lee3[2][2] = dot_l22 + x_e * SQRT2 * (77.0 / 16.0 * q22ee - 7.0 * q23ee + 5.0 * q24ee)
 
+    lee_matrix_stat = matrix_metrics(lee3)
     p_pa = p * 101325.0
     leefac = 16.0 * p_pa / (3.0 * K_B * max(t, 1.0e-12)) * math.sqrt(MASS_E / (2.0 * PI * K_B * max(t, 1.0e-12)))
     de_sol = solve_linear_system(lee3, [1.0, 0.0, 0.0])
@@ -1032,17 +1139,38 @@ def compute_transport_for_state(
     for sp in HEAVY:
         h_tilde = h_species_mass[sp] - h_mix
         k_reac_raw += diffusivity[sp] * h_tilde * y_deriv[sp]
-    # Composite Butler-Brokaw-style surrogate:
-    #   1) composition-gradient enthalpy-diffusion term
-    #   2) reaction specific-heat amplification term for ionization peaks
-    k_reac_grad = rho * k_reac_raw
+
+    # Mass-fraction gradient form:
+    #   k_reac = rho * sum_i(D_i * (h_i-h_mix) * dY_i/dT)
+    k_reac_grad_mass = rho * k_reac_raw
+
+    # Mole-fraction gradient form:
+    #   k_reac = n_tot * sum_i(D_i * (h_i-h_mix)_particle * dx_i/dT)
+    h_part = {sp: h_species_mass[sp] * MASS[sp] for sp in SPECIES}
+    h_mix_part = sum(x[sp] * h_part[sp] for sp in SPECIES)
+    k_reac_mole_sum = 0.0
+    for sp in HEAVY:
+        h_tilde_part = h_part[sp] - h_mix_part
+        k_reac_mole_sum += diffusivity[sp] * h_tilde_part * x_deriv[sp]
+    k_reac_grad_mole = n_total * k_reac_mole_sum
+
     cp_reac = cp_mix - cp_frozen
     k_reac_cp = mu_heavy * max(cp_reac, 0.0) / max(pr_heavy, 1e-8)
-    k_reac = max(reaction_scale * (k_reac_grad + k_reac_cp), 0.0)
+
+    if k_reac_model == "legacy_composite":
+        k_reac_raw_model = k_reac_grad_mass + k_reac_cp
+    elif k_reac_model == "butler_mass":
+        k_reac_raw_model = k_reac_grad_mass
+    elif k_reac_model == "butler_mole":
+        k_reac_raw_model = k_reac_grad_mole
+    else:  # butler_mole_cp
+        k_reac_raw_model = k_reac_grad_mole + k_reac_cp
+
+    k_reac = max(reaction_scale * k_reac_raw_model, 0.0)
 
     kappa = k_h + k_e + k_int + k_reac
 
-    return {
+    row = {
         "T_K": t,
         "P_atm": p,
         "mu_Pa_s": mu_heavy,
@@ -1058,26 +1186,144 @@ def compute_transport_for_state(
         "Cstar_e": c_e,
         "cp_frozen_J_kgK": cp_frozen,
         "cp_reac_J_kgK": cp_reac,
+        "kappa_reac_grad_mass_W_mK": k_reac_grad_mass,
+        "kappa_reac_grad_mole_W_mK": k_reac_grad_mole,
+        "kappa_reac_cp_W_mK": k_reac_cp,
     }
 
+    heavy_pair_top, heavy_pair_top_share = dominant_pair(heavy_pair_weights)
+    electron_pair_top, electron_pair_top_share = dominant_pair(electron_pair_weights)
+    kappa_abs_sum = max(abs(k_h) + abs(k_e) + abs(k_int) + abs(k_reac), 1.0e-300)
+    diagnostics: dict[str, object] = {
+        "T_K": t,
+        "P_atm": p,
+        "collision_stage": {
+            "heavy_pair_weight_share": heavy_pair_weights,
+            "heavy_pair_top": heavy_pair_top,
+            "heavy_pair_top_share": heavy_pair_top_share,
+            "electron_pair_weight_share": electron_pair_weights,
+            "electron_pair_top": electron_pair_top,
+            "electron_pair_top_share": electron_pair_top_share,
+        },
+        "matrix_stage": {
+            "mu": mu_matrix_stat,
+            "k_H": kh_matrix_stat,
+            "lee3": lee_matrix_stat,
+        },
+        "output_stage": {
+            "mu_Pa_s": mu_heavy,
+            "kappa_W_mK": kappa,
+            "sigma_S_m": sigma,
+            "kappa_share_H": k_h / kappa_abs_sum,
+            "kappa_share_e": k_e / kappa_abs_sum,
+            "kappa_share_int": k_int / kappa_abs_sum,
+            "kappa_share_reac": k_reac / kappa_abs_sum,
+        },
+    }
+    return row, diagnostics
 
-def compute_mass_fraction_derivatives(rows: list[dict[str, float]]) -> list[dict[str, float]]:
+
+def compute_composition_derivatives(
+    rows: list[dict[str, float]],
+) -> tuple[list[dict[str, float]], list[dict[str, float]]]:
     temps = [r["T_K"] for r in rows]
 
     y_by_sp: dict[str, list[float]] = {sp: [0.0] * len(rows) for sp in SPECIES}
+    x_by_sp: dict[str, list[float]] = {sp: [0.0] * len(rows) for sp in SPECIES}
     for i, row in enumerate(rows):
         rho = 0.0
+        n_total = 0.0
         for sp in SPECIES:
             rho += row[sp] * MASS[sp]
+            n_total += row[sp]
         rho = max(rho, 1e-300)
+        n_total = max(n_total, 1e-300)
         for sp in SPECIES:
             y_by_sp[sp][i] = row[sp] * MASS[sp] / rho
+            x_by_sp[sp][i] = row[sp] / n_total
 
     dydt_by_sp = {sp: numeric_derivative(temps, y_by_sp[sp]) for sp in SPECIES}
-    out: list[dict[str, float]] = []
+    dxdt_by_sp = {sp: numeric_derivative(temps, x_by_sp[sp]) for sp in SPECIES}
+    out_y: list[dict[str, float]] = []
+    out_x: list[dict[str, float]] = []
     for i in range(len(rows)):
-        out.append({sp: dydt_by_sp[sp][i] for sp in SPECIES})
-    return out
+        out_y.append({sp: dydt_by_sp[sp][i] for sp in SPECIES})
+        out_x.append({sp: dxdt_by_sp[sp][i] for sp in SPECIES})
+    return out_y, out_x
+
+
+def aggregate_state_diagnostics(diag_rows: list[dict[str, object]]) -> dict[str, object]:
+    if not diag_rows:
+        return {}
+
+    def mean(values: list[float]) -> float:
+        if not values:
+            return 0.0
+        return sum(values) / len(values)
+
+    heavy_acc: dict[str, float] = defaultdict(float)
+    elec_acc: dict[str, float] = defaultdict(float)
+    mu_diag_ratio: list[float] = []
+    mu_offdiag_to_diag: list[float] = []
+    kh_diag_ratio: list[float] = []
+    kh_offdiag_to_diag: list[float] = []
+    lee_diag_ratio: list[float] = []
+    lee_offdiag_to_diag: list[float] = []
+    share_h: list[float] = []
+    share_e: list[float] = []
+    share_int: list[float] = []
+    share_reac: list[float] = []
+
+    for d in diag_rows:
+        cstage = d["collision_stage"]
+        for k, v in cstage["heavy_pair_weight_share"].items():
+            heavy_acc[k] += float(v)
+        for k, v in cstage["electron_pair_weight_share"].items():
+            elec_acc[k] += float(v)
+
+        mstage = d["matrix_stage"]
+        mu_diag_ratio.append(float(mstage["mu"]["diag_ratio"]))
+        mu_offdiag_to_diag.append(float(mstage["mu"]["offdiag_to_diag"]))
+        kh_diag_ratio.append(float(mstage["k_H"]["diag_ratio"]))
+        kh_offdiag_to_diag.append(float(mstage["k_H"]["offdiag_to_diag"]))
+        lee_diag_ratio.append(float(mstage["lee3"]["diag_ratio"]))
+        lee_offdiag_to_diag.append(float(mstage["lee3"]["offdiag_to_diag"]))
+
+        ostage = d["output_stage"]
+        share_h.append(float(ostage["kappa_share_H"]))
+        share_e.append(float(ostage["kappa_share_e"]))
+        share_int.append(float(ostage["kappa_share_int"]))
+        share_reac.append(float(ostage["kappa_share_reac"]))
+
+    n = float(len(diag_rows))
+    heavy_mean = {k: v / n for k, v in heavy_acc.items()}
+    elec_mean = {k: v / n for k, v in elec_acc.items()}
+    heavy_sorted = sorted(heavy_mean.items(), key=lambda kv: kv[1], reverse=True)
+    elec_sorted = sorted(elec_mean.items(), key=lambda kv: kv[1], reverse=True)
+
+    return {
+        "n_states": len(diag_rows),
+        "collision_stage": {
+            "heavy_pair_mean_share": heavy_mean,
+            "electron_pair_mean_share": elec_mean,
+            "heavy_pair_top3": heavy_sorted[:3],
+            "electron_pair_top3": elec_sorted[:3],
+        },
+        "matrix_stage": {
+            "mu_diag_ratio_mean": mean(mu_diag_ratio),
+            "mu_offdiag_to_diag_mean": mean(mu_offdiag_to_diag),
+            "kH_diag_ratio_mean": mean(kh_diag_ratio),
+            "kH_offdiag_to_diag_mean": mean(kh_offdiag_to_diag),
+            "lee3_diag_ratio_mean": mean(lee_diag_ratio),
+            "lee3_offdiag_to_diag_mean": mean(lee_offdiag_to_diag),
+        },
+        "output_stage": {
+            "kappa_share_H_mean": mean(share_h),
+            "kappa_share_e_mean": mean(share_e),
+            "kappa_share_int_mean": mean(share_int),
+            "kappa_share_reac_mean": mean(share_reac),
+        },
+    }
 
 
 def write_csv(path: Path, rows: list[dict[str, float]], fieldnames: list[str]) -> None:
@@ -1180,10 +1426,11 @@ def main() -> None:
 
     combined_rows: list[dict[str, float]] = []
     per_pressure: dict[float, list[dict[str, float]]] = {}
+    diag_by_pressure: dict[float, list[dict[str, object]]] = defaultdict(list)
 
     for p in pressures:
         states = equilibrium_by_p[p]
-        dydt_rows = compute_mass_fraction_derivatives(states)
+        dydt_rows, dxdt_rows = compute_composition_derivatives(states)
         rows_p: list[dict[str, float]] = []
 
         for idx, state in enumerate(states):
@@ -1192,10 +1439,11 @@ def main() -> None:
             if thermo is None:
                 raise KeyError(f"Missing thermo row for P={p}, T={t}")
 
-            row = compute_transport_for_state(
+            row, diag = compute_transport_for_state(
                 state=state,
                 thermo=thermo,
                 y_deriv=dydt_rows[idx],
+                x_deriv=dxdt_rows[idx],
                 t_pf=t_pf,
                 h_mass_pf=h_mass_pf,
                 cp_mass_pf=cp_mass_pf,
@@ -1203,9 +1451,11 @@ def main() -> None:
                 pr_heavy=args.pr_heavy,
                 pr_int=args.pr_int,
                 reaction_scale=args.reaction_scale,
+                k_reac_model=args.k_reac_model,
             )
             rows_p.append(row)
             combined_rows.append(row)
+            diag_by_pressure[p].append(diag)
 
         per_pressure[p] = rows_p
 
@@ -1227,6 +1477,9 @@ def main() -> None:
         "Cstar_e",
         "cp_frozen_J_kgK",
         "cp_reac_J_kgK",
+        "kappa_reac_grad_mass_W_mK",
+        "kappa_reac_grad_mole_W_mK",
+        "kappa_reac_cp_W_mK",
     ]
 
     combined_csv = output_dir / "argon_transport_0p1_1_4atm.csv"
@@ -1236,6 +1489,36 @@ def main() -> None:
         ptag = pressure_tag(p)
         per_csv = output_dir / f"argon_transport_{ptag}atm.csv"
         write_csv(per_csv, per_pressure[p], fields)
+
+    sensitivity_report: dict[str, object] = {}
+    for p in pressures:
+        key = f"{p:g} atm"
+        sensitivity_report[key] = aggregate_state_diagnostics(diag_by_pressure[p])
+
+    sensitivity_path = output_dir / "argon_transport_sensitivity_report.json"
+    sensitivity_path.write_text(
+        json.dumps(sensitivity_report, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    for p in pressures:
+        key = f"{p:g} atm"
+        srep = sensitivity_report.get(key, {})
+        cstage = srep.get("collision_stage", {})
+        ostage = srep.get("output_stage", {})
+        top_heavy = cstage.get("heavy_pair_top3", [])
+        if top_heavy:
+            pair0, share0 = top_heavy[0]
+        else:
+            pair0, share0 = "", 0.0
+        print(
+            "[SENS] "
+            f"{key}: heavy-top={pair0} ({100.0*float(share0):.2f}%), "
+            f"kappa shares [H={100.0*float(ostage.get('kappa_share_H_mean', 0.0)):.2f}%, "
+            f"e={100.0*float(ostage.get('kappa_share_e_mean', 0.0)):.2f}%, "
+            f"int={100.0*float(ostage.get('kappa_share_int_mean', 0.0)):.2f}%, "
+            f"reac={100.0*float(ostage.get('kappa_share_reac_mean', 0.0)):.2f}%]"
+        )
 
     peak_summary: dict[str, dict[str, float]] = {}
     for p in pressures:
@@ -1270,14 +1553,15 @@ def main() -> None:
             "kappa_H": "Devoto/Muckenfuss-Curtiss 2nd-order heavy-species coefficient matrix",
             "kappa_e": "Devoto 3rd-order electron Lee matrix",
             "kappa_int": "Hirschfelder-Eucken internal conductivity (algebraic)",
-            "kappa_reac": "Butler-Brokaw-style composition-gradient term",
+            "kappa_reac": "Configurable Butler-Brokaw-style closure selected by --k-reac-model",
             "sigma": "Devoto 3rd-order electron conductivity from Lee matrix inverse",
-            "electron_missing_integrals": "Q14ei=Q13ei, Q15ei=Q13ei (default ratio fallback); Q23ee/Q24ee from Debye-Huckel table",
+            "electron_missing_integrals": "Q14ei/Q15ei read from Phase-4 CSV when available (including e-Ar regularized closure rows); fallback Q14ei=Q15ei=Q13ei is used only when absent.",
         },
         "constants": {
             "reaction_scale": args.reaction_scale,
             "pr_heavy": args.pr_heavy,
             "pr_int": args.pr_int,
+            "k_reac_model": args.k_reac_model,
         },
         "peaks": peak_summary,
         "notes": [
@@ -1289,6 +1573,7 @@ def main() -> None:
             "per_pressure_csv": [
                 str(output_dir / f"argon_transport_{pressure_tag(p)}atm.csv") for p in pressures
             ],
+            "sensitivity_report_json": str(sensitivity_path),
             "plots_dir": str(plots_dir),
         },
     }
@@ -1306,6 +1591,7 @@ def main() -> None:
     print(f"[OK] Wrote: {combined_csv}")
     for p in pressures:
         print(f"[OK] Wrote: {output_dir / f'argon_transport_{pressure_tag(p)}atm.csv'}")
+    print(f"[OK] Wrote: {sensitivity_path}")
     print(f"[OK] Wrote: {meta_path}")
     if not args.skip_plots:
         print(f"[OK] Wrote plots in: {plots_dir}")

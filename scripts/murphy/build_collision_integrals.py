@@ -41,6 +41,162 @@ ALPHA_AR_M3 = 1.6411e-30
 # Charged species used in argon LTE phase-2/3 pipeline
 CHARGED_SPECIES = ["e-", "Ar+", "Ar2+", "Ar3+", "Ar4+"]
 CHARGES = {"e-": -1, "Ar+": 1, "Ar2+": 2, "Ar3+": 3, "Ar4+": 4}
+EQ_CHARGE_COLS = {
+    "e-": "n_e",
+    "Ar+": "n_Ar_p",
+    "Ar2+": "n_Ar2_p",
+    "Ar3+": "n_Ar3_p",
+    "Ar4+": "n_Ar4_p",
+}
+
+# Debye-Huckel reduced-temperature table (Mutation++ CoulombIntegrals.cpp).
+# Values are (T*)^2 * Q^(1,4) and (T*)^2 * Q^(1,5) for attractive/repulsive
+# screened Coulomb interactions. These are required by the 3rd-order electron
+# Lee matrix in Devoto-style transport.
+COULOMB_TSTAR_GRID = [
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.6,
+    0.8,
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    6.0,
+    8.0,
+    10.0,
+    20.0,
+    30.0,
+    40.0,
+    60.0,
+    80.0,
+    100.0,
+    200.0,
+    300.0,
+    400.0,
+    600.0,
+    800.0,
+    1.0e3,
+    1.0e4,
+]
+
+COULOMB_Q14_ATT_TSTAR2 = [
+    0.0285,
+    0.0460,
+    0.0578,
+    0.0669,
+    0.0806,
+    0.0910,
+    0.0993,
+    0.1269,
+    0.1440,
+    0.1566,
+    0.1748,
+    0.1880,
+    0.1983,
+    0.2307,
+    0.2497,
+    0.2634,
+    0.2828,
+    0.2969,
+    0.3081,
+    0.3433,
+    0.3634,
+    0.3778,
+    0.3981,
+    0.4125,
+    0.4236,
+    0.5388,
+]
+
+COULOMB_Q14_REP_TSTAR2 = [
+    0.0110,
+    0.0221,
+    0.0316,
+    0.0399,
+    0.0536,
+    0.0648,
+    0.0742,
+    0.1065,
+    0.1268,
+    0.1416,
+    0.1627,
+    0.1777,
+    0.1894,
+    0.2254,
+    0.2462,
+    0.2610,
+    0.2817,
+    0.2964,
+    0.3078,
+    0.3429,
+    0.3633,
+    0.3778,
+    0.3981,
+    0.4125,
+    0.4236,
+    0.5388,
+]
+
+COULOMB_Q15_ATT_TSTAR2 = [
+    0.0227,
+    0.0353,
+    0.0437,
+    0.0500,
+    0.0596,
+    0.0668,
+    0.0725,
+    0.0915,
+    0.1032,
+    0.1118,
+    0.1241,
+    0.1330,
+    0.1400,
+    0.1616,
+    0.1744,
+    0.1835,
+    0.1967,
+    0.2062,
+    0.2137,
+    0.2373,
+    0.2506,
+    0.2602,
+    0.2737,
+    0.2833,
+    0.2908,
+    0.3675,
+]
+
+COULOMB_Q15_REP_TSTAR2 = [
+    0.0093,
+    0.0181,
+    0.0255,
+    0.0317,
+    0.0419,
+    0.0500,
+    0.0567,
+    0.0792,
+    0.0930,
+    0.1030,
+    0.1172,
+    0.1272,
+    0.1349,
+    0.1589,
+    0.1727,
+    0.1825,
+    0.1963,
+    0.2061,
+    0.2136,
+    0.2370,
+    0.2506,
+    0.2602,
+    0.2737,
+    0.2833,
+    0.2908,
+    0.3675,
+]
 
 # Ar+-Ar resonant charge exchange constants (Murphy & Tam 2014)
 AR_ARP_CX_STATES = [
@@ -105,6 +261,45 @@ def parse_args() -> argparse.Namespace:
         help="Maximum Debye length cap for screened-Coulomb stability.",
     )
     parser.add_argument(
+        "--debye-length-scale",
+        type=float,
+        default=1.0,
+        help="Multiplier applied to Debye length before Coulomb reduced-temperature cutoff.",
+    )
+    parser.add_argument(
+        "--coulomb-tstar-max",
+        type=float,
+        default=1.0e4,
+        help="Upper cutoff of reduced temperature T* used in screened-Coulomb tables.",
+    )
+    parser.add_argument(
+        "--coulomb-lnlambda-scale",
+        type=float,
+        default=1.0,
+        help=(
+            "Global scale factor for charged-charged Coulomb collision integrals "
+            "(acts like a Coulomb-log convention adjustment)."
+        ),
+    )
+    parser.add_argument(
+        "--e-ar-high-order-blend",
+        type=float,
+        default=0.0,
+        help=(
+            "Blend factor for e-Ar Q14/Q15: 0 keeps Murphy closure (Q14=Q15=Q11), "
+            "1 uses direct high-order moment integration."
+        ),
+    )
+    parser.add_argument(
+        "--debye-screening-density",
+        choices=["electron_only", "all_charged"],
+        default="electron_only",
+        help=(
+            "Screening density model for Debye length: "
+            "electron_only uses n_e, all_charged uses sum(z_i^2 n_i) over charged species."
+        ),
+    )
+    parser.add_argument(
         "--skip-mutationpp-snippet",
         action="store_true",
         help="Skip generating Mutation++ pair XML snippet.",
@@ -151,6 +346,34 @@ def log_interp(x_grid: list[float], y_grid: list[float], x: float) -> float:
     x_clipped = min(max(x, x_grid[0]), x_grid[-1])
     lx_grid = [math.log10(v) for v in x_grid]
     return linear_interp(lx_grid, y_grid, math.log10(x_clipped))
+
+
+def debye_huckel_lambda_tstar(
+    temperature_k: float,
+    electron_density_m3: float,
+    zabs: int,
+    max_debye_length_m: float,
+    debye_length_scale: float,
+    coulomb_tstar_max: float,
+) -> tuple[float, float]:
+    """Return Debye length and reduced temperature for screened Coulomb CI."""
+    t = max(temperature_k, 1.0e-12)
+    ne = max(electron_density_m3, 1.0e-16)
+
+    # LTE diffusion notes use electron-density-only Debye screening.
+    lambda_d = math.sqrt(EPS0 * K_B * t / (ne * E_CHARGE * E_CHARGE))
+    lambda_d *= max(debye_length_scale, 1.0e-12)
+
+    z_eff = max(float(zabs), 1.0)
+    b = z_eff * E_CHARGE * E_CHARGE / (8.0 * PI * EPS0 * K_B * t)
+
+    # Keep T* inside the tabulated range, consistent with Debye-Huckel tables.
+    tstar_max = max(coulomb_tstar_max, COULOMB_TSTAR_GRID[0])
+    lambda_cap_tstar = 2.0 * tstar_max * b
+    lambda_d = min(lambda_d, max_debye_length_m, lambda_cap_tstar)
+
+    t_star = max(0.5 * lambda_d / max(b, 1.0e-300), COULOMB_TSTAR_GRID[0])
+    return lambda_d, t_star
 
 
 def trapz(x: list[float], y: list[float]) -> float:
@@ -304,7 +527,12 @@ def q_ar_arp_elastic_langevin_a2(energy_ev: float, charge_state: int = 1) -> flo
     """Capture-model elastic cross-section for V(r) = -C4/r^4 in Angstrom^2."""
     e_j = max(energy_ev * EV_TO_J, 1.0e-30)
     z = float(abs(charge_state))
-    c4 = ALPHA_AR_M3 * (z * E_CHARGE) ** 2 / (32.0 * PI * PI * EPS0 * EPS0)
+    # Polarizability in this project is stored as a volume [m^3].
+    # Convert to SI polarizability alpha_SI = 4*pi*eps0*alpha_vol before
+    # evaluating C4 in SI. Without this conversion, sigma is overestimated
+    # by ~O(1e5) in the Ar-Ar+ elastic capture model.
+    alpha_si = 4.0 * PI * EPS0 * ALPHA_AR_M3
+    c4 = alpha_si * (z * E_CHARGE) ** 2 / (32.0 * PI * PI * EPS0 * EPS0)
     sigma_m2 = PI * math.sqrt(2.0 * c4 / e_j)
     return sigma_m2 * M2_TO_ANG2
 
@@ -334,14 +562,28 @@ def load_mason_tables(
     return ti, tii
 
 
-def load_equilibrium_ne_by_pressure(path: Path) -> dict[float, tuple[list[float], list[float]]]:
+def load_equilibrium_screening_density_by_pressure(
+    path: Path,
+    mode: str,
+) -> dict[float, tuple[list[float], list[float]]]:
     rows = read_csv_rows(path)
     grouped: dict[float, list[tuple[float, float]]] = {}
     for r in rows:
         p = float(r["P_atm"])
         t = float(r["T_K"])
-        ne = float(r["n_e"])
-        grouped.setdefault(p, []).append((t, ne))
+        ne = max(float(r["n_e"]), 0.0)
+
+        if mode == "electron_only":
+            screening_density = ne
+        else:
+            screening_density = 0.0
+            for sp, col in EQ_CHARGE_COLS.items():
+                ni = max(float(r[col]), 0.0)
+                zi = abs(CHARGES[sp])
+                screening_density += (zi * zi) * ni
+
+        grouped.setdefault(p, []).append((t, screening_density))
+
     out: dict[float, tuple[list[float], list[float]]] = {}
     for p, arr in grouped.items():
         arr_sorted = sorted(arr, key=lambda x: x[0])
@@ -519,8 +761,18 @@ def main() -> None:
         # e-Ar (electron-neutral)
         q11_a2 = thermal_average_q(t, q_e_ar, moment_power=1)
         q22_a2 = q11_a2  # Murphy-style approximation for e-neutral
+        # Devoto electron Lee matrix needs high-order moments (Q14/Q15).
+        # Use regularized moment closure: blend direct high-order moments with
+        # Murphy closure to keep low-temperature conductivity stable.
+        q14_a2_moment = thermal_average_q(t, q_e_ar, moment_power=4)
+        q15_a2_moment = thermal_average_q(t, q_e_ar, moment_power=5)
+        blend = min(max(args.e_ar_high_order_blend, 0.0), 1.0)
+        q14_a2 = (1.0 - blend) * q11_a2 + blend * q14_a2_moment
+        q15_a2 = (1.0 - blend) * q11_a2 + blend * q15_a2_moment
         q11_m2 = q11_a2 * ANG2_TO_M2
         q22_m2 = q22_a2 * ANG2_TO_M2
+        q14_m2 = q14_a2 * ANG2_TO_M2
+        q15_m2 = q15_a2 * ANG2_TO_M2
         non_charged_rows.append(
             {
                 "T_K": t,
@@ -528,20 +780,27 @@ def main() -> None:
                 "category": "electron-neutral",
                 "Q11_m2": q11_m2,
                 "Q22_m2": q22_m2,
+                "Q14_m2": q14_m2,
+                "Q15_m2": q15_m2,
                 "Q11_A2": q11_a2,
                 "Q22_A2": q22_a2,
+                "Q14_A2": q14_a2,
+                "Q15_A2": q15_a2,
                 "Ast": 1.0,
                 "Bst": 1.0,
                 "Cst": 1.0,
                 "source": "Milloy1977 + Frost1964",
-                "notes": "Omega22 assumed equal to Omega11",
+                "notes": "Q14/Q15 from regularized direct Maxwellian moments of Qm(E); Omega22 assumed equal to Omega11",
             }
         )
 
     # --- Charged-charged category ---
     charged_rows: list[dict[str, object]] = []
     if not args.skip_charged:
-        eq_by_p = load_equilibrium_ne_by_pressure(args.equilibrium_csv.resolve())
+        eq_by_p = load_equilibrium_screening_density_by_pressure(
+            args.equilibrium_csv.resolve(),
+            mode=args.debye_screening_density,
+        )
         available_p = sorted(eq_by_p.keys())
 
         tstar_grid_i = mason_i["Tstar"]
@@ -549,12 +808,10 @@ def main() -> None:
 
         for p_target in args.pressures_atm:
             p_key = nearest_pressure_key(available_p, p_target)
-            t_eq, ne_eq = eq_by_p[p_key]
+            t_eq, screening_eq = eq_by_p[p_key]
             for t in temperatures:
-                ne_raw = max(linear_interp(t_eq, ne_eq, t), 1.0e-300)
-                ne = max(ne_raw, args.min_ne_m3)
-                lambda_d = math.sqrt(EPS0 * K_B * t / (E_CHARGE * E_CHARGE * ne))
-                lambda_d = min(lambda_d, args.max_debye_length_m)
+                n_screen_raw = max(linear_interp(t_eq, screening_eq, t), 1.0e-300)
+                n_screen = max(n_screen_raw, args.min_ne_m3)
                 for i in range(len(CHARGED_SPECIES)):
                     for j in range(i, len(CHARGED_SPECIES)):
                         s1 = CHARGED_SPECIES[i]
@@ -565,16 +822,16 @@ def main() -> None:
                         if zabs == 0:
                             continue
 
-                        interaction = "attraction" if z1 * z2 < 0 else "repulsion"
-                        t_star = (
-                            4.0
-                            * PI
-                            * EPS0
-                            * K_B
-                            * t
-                            * lambda_d
-                            / (zabs * E_CHARGE * E_CHARGE)
+                        lambda_d, t_star = debye_huckel_lambda_tstar(
+                            temperature_k=t,
+                            electron_density_m3=n_screen,
+                            zabs=zabs,
+                            max_debye_length_m=args.max_debye_length_m,
+                            debye_length_scale=args.debye_length_scale,
+                            coulomb_tstar_max=args.coulomb_tstar_max,
                         )
+
+                        interaction = "attraction" if z1 * z2 < 0 else "repulsion"
 
                         if interaction == "attraction":
                             o11_t2 = log_interp(tstar_grid_i, mason_i["O11_attr_t2"], t_star)
@@ -582,17 +839,23 @@ def main() -> None:
                             a_star = log_interp(tstar_grid_ii, mason_ii["A_attr"], t_star)
                             b_star = log_interp(tstar_grid_ii, mason_ii["B_attr"], t_star)
                             c_star = log_interp(tstar_grid_ii, mason_ii["C_attr"], t_star)
+                            q14_t2 = log_interp(COULOMB_TSTAR_GRID, COULOMB_Q14_ATT_TSTAR2, t_star)
+                            q15_t2 = log_interp(COULOMB_TSTAR_GRID, COULOMB_Q15_ATT_TSTAR2, t_star)
                         else:
                             o11_t2 = log_interp(tstar_grid_i, mason_i["O11_rep_t2"], t_star)
                             o22_t2 = log_interp(tstar_grid_i, mason_i["O22_rep_t2"], t_star)
                             a_star = log_interp(tstar_grid_ii, mason_ii["A_rep"], t_star)
                             b_star = log_interp(tstar_grid_ii, mason_ii["B_rep"], t_star)
                             c_star = log_interp(tstar_grid_ii, mason_ii["C_rep"], t_star)
+                            q14_t2 = log_interp(COULOMB_TSTAR_GRID, COULOMB_Q14_REP_TSTAR2, t_star)
+                            q15_t2 = log_interp(COULOMB_TSTAR_GRID, COULOMB_Q15_REP_TSTAR2, t_star)
 
-                        o11_star = o11_t2 / max(t_star * t_star, 1.0e-300)
-                        o22_star = o22_t2 / max(t_star * t_star, 1.0e-300)
-                        q11_m2 = o11_star * PI * lambda_d * lambda_d
-                        q22_m2 = o22_star * PI * lambda_d * lambda_d
+                        scale = PI * lambda_d * lambda_d / max(t_star * t_star, 1.0e-300)
+                        coulomb_scale = max(args.coulomb_lnlambda_scale, 1.0e-12)
+                        q11_m2 = coulomb_scale * o11_t2 * scale
+                        q22_m2 = coulomb_scale * o22_t2 * scale
+                        q14_m2 = coulomb_scale * q14_t2 * scale
+                        q15_m2 = coulomb_scale * q15_t2 * scale
 
                         charged_rows.append(
                             {
@@ -604,12 +867,16 @@ def main() -> None:
                                 "Tstar": t_star,
                                 "Q11_m2": q11_m2,
                                 "Q22_m2": q22_m2,
+                                "Q14_m2": q14_m2,
+                                "Q15_m2": q15_m2,
                                 "Q11_A2": q11_m2 * M2_TO_ANG2,
                                 "Q22_A2": q22_m2 * M2_TO_ANG2,
+                                "Q14_A2": q14_m2 * M2_TO_ANG2,
+                                "Q15_A2": q15_m2 * M2_TO_ANG2,
                                 "Ast": a_star,
                                 "Bst": b_star,
                                 "Cst": c_star,
-                                "source": "Mason1967 Table I/II + electron-only Debye length",
+                                "source": "Mason1967 table + Debye-Huckel screening",
                             }
                         )
 
@@ -621,8 +888,12 @@ def main() -> None:
         "category",
         "Q11_m2",
         "Q22_m2",
+        "Q14_m2",
+        "Q15_m2",
         "Q11_A2",
         "Q22_A2",
+        "Q14_A2",
+        "Q15_A2",
         "Ast",
         "Bst",
         "Cst",
@@ -641,8 +912,12 @@ def main() -> None:
         "Tstar",
         "Q11_m2",
         "Q22_m2",
+        "Q14_m2",
+        "Q15_m2",
         "Q11_A2",
         "Q22_A2",
+        "Q14_A2",
+        "Q15_A2",
         "Ast",
         "Bst",
         "Cst",
@@ -662,8 +937,12 @@ def main() -> None:
         "Tstar",
         "Q11_m2",
         "Q22_m2",
+        "Q14_m2",
+        "Q15_m2",
         "Q11_A2",
         "Q22_A2",
+        "Q14_A2",
+        "Q15_A2",
         "Ast",
         "Bst",
         "Cst",
@@ -683,8 +962,12 @@ def main() -> None:
                 "Tstar": "",
                 "Q11_m2": r["Q11_m2"],
                 "Q22_m2": r["Q22_m2"],
+                "Q14_m2": r.get("Q14_m2", ""),
+                "Q15_m2": r.get("Q15_m2", ""),
                 "Q11_A2": r["Q11_A2"],
                 "Q22_A2": r["Q22_A2"],
+                "Q14_A2": r.get("Q14_A2", ""),
+                "Q15_A2": r.get("Q15_A2", ""),
                 "Ast": r["Ast"],
                 "Bst": r["Bst"],
                 "Cst": r["Cst"],
@@ -704,8 +987,12 @@ def main() -> None:
                 "Tstar": r["Tstar"],
                 "Q11_m2": r["Q11_m2"],
                 "Q22_m2": r["Q22_m2"],
+                "Q14_m2": r["Q14_m2"],
+                "Q15_m2": r["Q15_m2"],
                 "Q11_A2": r["Q11_A2"],
                 "Q22_A2": r["Q22_A2"],
+                "Q14_A2": r["Q14_A2"],
+                "Q15_A2": r["Q15_A2"],
                 "Ast": r["Ast"],
                 "Bst": r["Bst"],
                 "Cst": r["Cst"],
@@ -747,12 +1034,17 @@ def main() -> None:
         "charged_model_limits": {
             "min_ne_m3": args.min_ne_m3,
             "max_debye_length_m": args.max_debye_length_m,
+            "debye_length_scale": args.debye_length_scale,
+            "coulomb_tstar_max": args.coulomb_tstar_max,
+            "coulomb_lnlambda_scale": args.coulomb_lnlambda_scale,
+            "e_ar_high_order_blend": args.e_ar_high_order_blend,
         },
+        "debye_screening_density_model": args.debye_screening_density,
         "models": {
             "Ar-Ar": "LJ surrogate with Aziz epsilon/k and sigma",
             "Ar-Ar+": "Qex model (MurphyTam2014) + Langevin elastic capture model",
             "e-Ar": "Maxwellian average of Qm(E), Milloy table + Frost high-energy extension",
-            "charged-charged": "Mason1967 reduced tables + Debye length (electron-only)",
+            "charged-charged": "Mason1967 reduced tables + Debye-Huckel screening",
         },
         "outputs": {
             "non_charged_csv": str(non_charged_csv),
@@ -765,6 +1057,7 @@ def main() -> None:
             "Frost1964 high-energy e-Ar points are figure-digitized approximations.",
             "Charged-charged table uses electron density from phase-2 equilibrium CSV and is pressure-dependent.",
             "Debye length is capped and ne is floored for low-ionization stability in screened-Coulomb mode.",
+            "Coulomb tuning knobs (debye_length_scale, coulomb_tstar_max, coulomb_lnlambda_scale) can be calibrated against reference lookup tables.",
         ],
     }
     metadata_path = output_dir / "argon_collision_integrals_metadata.json"
